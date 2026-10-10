@@ -1,0 +1,12 @@
+API EXPORTADA P2  (CAD.geom: puro, sem DOM, sem depender de outras partes)
+Convenções: pontos {x,y,z}; ângulos das FUNÇÕES em RADIANOS; ângulos de DADOS de entidade (a1,a2, ellipse a1/a2, xline dir numérico) em GRAUS, anti-horário a partir de +X; bbox = {x1,y1,x2,y2}; matriz afim {a,b,c,d,e,f}: x'=a*x+c*y+e, y'=b*x+d*y+f
+Vetores: add(a,b) sub(a,b) mul(v,k) dot(a,b) cross(a,b) len(v) dist(a,b) unit(v)->pt(0,0 se nulo) ang(v) polar(p,ang,d) normAng(a)->[0,2π) rot(p,ang,centro?) mirrorPt(p,a,b) ; EPS
+Matrizes: matrix.identity() translate(dx,dy) rotate(ang,centro?) scale(sx,sy?,centro?) mirror(a,b) mul(m,n)[aplica n e depois m] det(m) inverse(m)->m|null apply(m,p)  (mesmo formato de CAD.xform da P1)
+Segmentos: segs(e,ext?)->[{t:'L',p1,p2,ext?}|{t:'A',c,r,a1,a2,rev,ext?}|{t:'C',c,r}] (rad; arco anti-horário de a1 a a2; rev=percurso de a2 a a1; ext 'both'|'fwd'|'back'; elipse/spline viram L com flat:true) ; fromSegs(segs,closed,props?)->pline ; flatten(e,passoRad?)->[pts]
+Tipos aceitos: line pline(bulge=tan(sweep/4), + = anti-horário) circle arc ellipse{c,major,ratio,a1,a2} spline{fit,closed}(Catmull-Rom, aproximada) xline|ray{p,dir} point{p}
+intersect(a,b,{extend:true|'a'|'b'|'both'})->[pts] (sem duplicatas; elipse/spline aproximadas por polilinha) ; closest(e,pt)->{pt,dist,i(índice do segmento)}
+bbox(e|[e])->bbox|null (xline/ray = null) ; length(e) (xline/ray = Infinity) ; area(e)=|signedArea(e)| ; signedArea(e) (anti-horário +; pline aberta fecha pela corda; arco/linha = 0) ; pointInPoly(pt,[pts]|entidade)->true também sobre a borda
+offset(e,dist,'left'|'right'|ponto)->entidade nova|null (line circle arc pline; esquerda = sentido do desenho, em círculo/arco = para dentro; pline: emenda por prolongamento, sem remover laços) ; explode(pline)->[line|arc] (copia layer/cor/lw/ltype/space)
+trim(e,edges[],pick)->{parts:[entidades sem id]}|null (line arc circle pline; parts substituem e) ; extend(e,edges[],pick)->patch p/ ents.update|null ({p1|p2} | {a1|a2} em graus | {pts}) 
+fillet(a,b,r,pa,pb)->{a:patch|null,b:patch|null,arc:{type:'arc',c,r,a1,a2}|null}|null (line/arc/circle; r=0 = canto) ; chamfer(a,b,d1,d2,pa,pb)->{a,b,line}|null (só linhas) ; patches = o que passar a ents.update
+CAD.tests.p2()

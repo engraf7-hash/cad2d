@@ -1,0 +1,11 @@
+API EXPORTADA P12
+CAD.dxf: export(doc)->string DXF R2000 (AC1015, ASCII, só \U+ p/ não-ASCII) | import(texto)->{doc,report} | parse(texto)->{HEADER,TABLES,BLOCKS,ENTITIES} | apply(doc) mescla no desenho atual (1 grupo de undo)
+CAD.dxf.register(nomeDXF,fn(r,ctx)->ent|[ent]|null)  importação ; CAD.dxf.registerOut(tipo,fn(e,ctx)->{n,sub,g:[[cod,val]],com?}|[..]|null)  exportação (ex.: P9 plugar DIMENSION nativa)
+CAD.dxf.gv(r,cod) gn(r,cod,def) gp(r,cod)->{x,y,z} gall(r,cod) enc(s) dec(s) ; CAD.dxf.color{pair(c)->{aci,tc?}, hex(rgb), aci(i)}
+Via CAD.types.extend(tipo,{toDXF,fromDXF}) p/ line circle arc pline ellipse spline point text mtext hatch insert xline ray ; tipo sem toDXF mas com explode(e) é exportado como geometria
+CAD.fileio.register: 'dxf' (import(texto)->doc ; export(doc)->Blob) -> OPEN/EXPORT do P11 já aceitam .dxf
+Comandos: DXFEXPORT (DXFOUT) DXFIMPORT (DXFIN, mescla; decodifica ANSI_125x) ; menu 'Arquivo/Exportar DXF' e 'Importar DXF (mesclar)'
+Export: LAYER(flags,62/420,lw,ltype,plot) LTYPE STYLE BLOCK_RECORD BLOCKS ENTITIES; pline->LWPOLYLINE; paper space (space!=model)->67=1
+Import: LINE POLYLINE LWPOLYLINE CIRCLE ARC ELLIPSE SPLINE(fit/NURBS) POINT TEXT MTEXT HATCH(polyline/linha/arco/elipse) SOLID XLINE RAY INSERT(+ATTRIB->attrs{tag:valor}) DIMENSION(via bloco *D -> geometria)
+Premissas: hatch.loops=[[{x,y,bulge}]] ; text.just in left|center|right|middle|tl..br ; insert.attrs={tag:valor} ; ângulos em graus ; cor "#rrggbb" ; ltype em minúsculas ; espaço papel é ignorado na importação
+CAD.tests.p12()  (síncrono; retorna {ok,fail})

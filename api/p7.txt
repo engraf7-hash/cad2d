@@ -1,0 +1,13 @@
+API EXPORTADA P7 (js/p7-hatch.js)
+tipo 'hatch' {loops:[{pts:[{x,y,z,bulge}],src:[ids]}],pattern,scale,rot,solid,assoc,transp,style:'normal'|'outer'|'ignore',origin,uspace,udouble,src,srcSel,seeds}; escala padrão 50 (pattern mm × scale × fator de doc.units)
+CAD.hatch.patterns{nome:{name,cat,desc,solid,lines:[{a,x,y,dx,dy,d[]}]}} listPatterns(cat) registerPattern(nome,cat,desc,"ang,x,y,dx,dy,traço,-vazio;...") ; USER usa uspace/udouble
+CAD.hatch.state{pattern,scale,rot,transp,style,assoc,origin,uspace,udouble,toBack,startMode,gap} ; families(e,{uf}) ; draw(ctx,e,view,{uf,alpha}) ; swatch(nome,canvas)
+CAD.hatch.findBoundary(pt,{ents?,gap?})->{ok,loops|msg} ; fromObjects(ents)->{ok,loops|msg} ; create(loops,{seeds,srcSel,...opts})->id ; edit(ids,patch,nome) (1 grupo de undo)
+CAD.hatch.liveLoops(e) (associativa: recalcula pelas fontes) ; pointInRegion(e,pt) ; area(e) ; segments(e,{uf})->{lines:[{p1,p2}],points:[],solid}
+CAD.hatch.toDXF(e)->pares [[cod,valor]] (inclui 0,8,100 AcDbHatch; P12 acrescenta handle) ; fromDXF(pares|{pairs})->entidade|null (arestas line/arc/ellipse; spline não)
+CAD.hatch.toSVG(e)-> <path> em mundo com Y invertido (y→-y), stroke currentColor ; types.explode(e)-> lines/points (padrão) ou plines fechadas (solid)
+types.register('hatch',{draw,bbox,hit,snapPts:[],grips:[],transform->patch,props->[{key,label,type,options?,value,readonly?}],explode,toDXF,fromDXF,toSVG,zorder:-10})
+transform: patch {loops,rot,origin,scale,assoc,seeds,uspace}; assoc só se todas as fontes estiverem em CAD.sel
+CAD.cmd: HATCH (H BH BHATCH HACHURA: Selecionar/Padrao/Escala/Rotacao/Transparencia/Associativa/Ilhas/Origem/Desfazer) ; HATCHEDIT (HE: Padrao/Escala/Rotacao/Transparencia/Associativa/Ilhas/Origem/Mais/Contorno/Fim)
+CAD.ui: menu Desenhar>Hachura..., Modificar>Editar hachura ; toolbar Desenho ▨ ; painel 'hatch' (lista com miniaturas, escala, ângulo, transparência, ilhas, associativa)
+Teste: CAD.tests.p7() (31 asserts, roda em Node e no navegador)

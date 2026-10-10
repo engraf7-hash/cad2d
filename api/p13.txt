@@ -1,0 +1,10 @@
+API EXPORTADA P13
+CAD.layout: paperSizes scales parseScale(txt)->den scaleText(den) mmPerUnit() paperDims(l) dimsOf(papel,orient,w,h) list() get(n) current() show(n|'model') extents()
+CAD.layout: add(nome,{paper,orient,scale,margins,autoVp}) remove(n) rename(a,b) update(n,patch) addViewport(n,{x,y,w,h,cx,cy,scale}) updateViewport(n,id,patch) removeViewport(n,id) vpMap(vp)->fn(ptMundo)->mm
+CAD.layout.sheet(job)->{W,H,ops,scales} ; job={source:'model'|'layout',layout,paper,orient,margins,area:{mode:'extents'|'view'|'window',win},scale:'fit'|'fitx'|den,color:'color'|'gray'|'mono',lwMode:'layer'|'uniform',lwValue,lwScale,frame}
+CAD.layout.svg(sheet,{bg,inner,fluid}) ; CAD.layout.plot(job,'pdf'|'print'|'svg',nome) ; CAD.layout.wizard(job?) (assistente de 5 etapas)
+CAD.pdf: build(sheets,{title})->string PDF 1.4 ; blob(sheets,opt)->Blob ; encode(texto)->literal WinAnsi
+Dados: doc.layouts[]={name,paper:'A3'|{w,h},orient,scale,margins:{l,t,r,b},viewports:[{id,x,y,w,h(mm, y p/ cima),cx,cy,scale(1:n),on,border,locked}],titleblock:{on,w,rowH,fields}} ; entidade em paper space: e.space=nome do layout
+Eventos novos: layout:changed ; comandos: PLOT(PRINT,IMPRIMIR) LAYOUT(LO) MODEL MVIEW(MV,JANELA) MVSCALE ; painel 'layouts' ; registra fileio 'pdf' (export) se P11 existir
+Convenções: ctx de plotagem = gravador (draw(ctx,e,view) das types recebe view.plot=true; lineWidth/dash vêm de resolve(e), cor de strokeStyle/fillStyle); lw>=5 é lido como centésimos de mm
+CAD.tests.p13()

@@ -1,0 +1,13 @@
+API EXPORTADA (P3)
+CAD.snap.resolve(pt,{base|last,tol,zoom,only,osnap,track})→{pt,mode,guide,label}  // osnap → ortho/polar → snap; substitui o da P1
+CAD.snap.register(modo,fn(pt,ctx,tolMundo)→{pt,dist}|[{pt,mode?,d?,dist?,guide?}]|null)  // compatível com a P1; ctx:{tol,zoom,last,items,wide()}
+CAD.snap.toggle('osnap|ortho|polar|grid|snap|dynin'[,bool])  // usa CAD.toggle da P1 se existir; ortho e polar são exclusivos
+CAD.snap.acquire(pt) | clearAcquired() | override(modo|null) | clearOverride() | drawMarkers(bool, padrão true)
+CAD.mode += {aperture:10,pickbox:6,polarAngle:45,polarExtra:[],snapStep:null,osmodes:{endpoint,midpoint,center,geocenter,node,quadrant,intersection,extension,perpendicular,tangent,nearest,apparent}}
+CAD.sel.pick(modo,a,b,{tol})→ids  // mesma semântica da P1 (não altera a seleção); modos: click|window|crossing|box|all|previous|last|none
+CAD.sel.find = pick | CAD.sel.apply(modo,a,b,{add,remove,toggle}) → ids e aplica | CAD.sel.hit(pt,px) | CAD.sel.rubberband(p1,p2|null) | CAD.sel.mouse(bool, padrão true)
+Lê da P1: CAD.input.pending()→{base}, CAD.cmd.activeName(), CAD.visible/selectable/bboxOf, CAD.toggle, CAD.view.toWorld/toScreen/zoom
+Overlay: <canvas id="cad-overlay"> (grade, marcadores, guias, retângulo) ; dynin: <div id="cad-dynin">
+Comandos: OSNAP OR POLAR GRID SNAP DYN OSMODE GRIDUNIT SNAPUNIT POLARANG SELALL
+Teclas: F3 F7 F8 F9 F10 F12 (só age se a P1 não tratou), Ctrl+A, Esc
+CAD.tests.p3()

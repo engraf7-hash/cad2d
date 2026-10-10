@@ -1,0 +1,11 @@
+API EXPORTADA P11
+CAD.files: serialize(doc)->string | parse(texto)->doc (valida, normaliza, migra) | normalize(doc) | load(doc,{name,handle,named,dirty}) | newDoc() | open() save() saveAs() | autosave(kind='auto'|'manual'|'save') | startAutosave() | recover() ; CAD.files.state{name,named,handle,dirty,prefs{auto,every,keepAuto,keepSave,keepManual}}
+CAD.files.svg: export(doc,{only:{id:1},bg,title})->string SVG | import(texto,doc,{scale,layer})->{ents,layers,skipped} | apply(res) (1 grupo de undo)
+CAD.files.db (IndexedDB 'cad2d'): projPut/projGet/projDel/projList | snapPut(kind,texto)/snapGet(id)/snapList()/snapPrune(kind,n) | metaGet/metaPut
+CAD.fileio.register: 'cad' (.cad/.json) e 'svg' ; import(texto)->doc ; export(doc)->Blob
+Comandos: NEW OPEN SAVE SAVEAS EXPORT SVGEXPORT SVGIMPORT RECOVER BACKUP AUTOSAVE PROJECTS (aliases: QNEW NOVO ABRIR QSAVE SALVAR SALVARCOMO EXPORTAR RECUPERAR PROJETOS) | Ctrl+S Ctrl+Shift+S Ctrl+O
+Eventos emitidos: file:changed file:saved ; painel 'arquivos' ; menu 'Arquivo/...' ; toolbar 'Arquivo'
+.cad = {format:'CAD2D',formatVersion:1,app,saved,doc} (aceita também doc "puro")
+Convenção toSVG(e,ctx) p/ tipos fora do núcleo: string SVG em coordenadas do MUNDO (Y para cima); texto usa transform "translate(x y) rotate(r) scale(1 -1)"; ctx={doc,k,L,depth,cnt}. Estilo (cor, espessura, tracejado) vem do <g> da entidade (stroke/currentColor)
+Premissas: ângulos das entidades em graus; color em "#rrggbb" (ACI numérico 1-9 aceito no SVG); lw em mm; import(texto) de qualquer formato retorna um doc; CAD.setDoc recalcula o contador de ids
+CAD.tests.p11()  (assíncrono; retorna {ok,fail})

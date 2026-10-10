@@ -1,0 +1,12 @@
+API EXPORTADA P4  (depende só da P1; painéis e comandos se registram sozinhos)
+CAD.layers: list() get(n) find(n sem maiúsc.) current() usage(n) nextName() error(msg do último erro) LW LT LTL(rótulos)
+CAD.layers: add({name,color,lw,ltype,on,frozen,locked,transp,plot}) set(n,patch) toggle(n,chave) rename(old,new) remove(n) setCurrent(n) -> layer|null|true ; tudo via history (undo)
+CAD.layers: setDefaults({color,lw,ltype}) (doc.current; null=ByLayer) isolate(nomes) unisolate() setAll(chave,valor) purge()->qtd
+Regras: layer '0' não renomeia/exclui; atual não exclui/congela; congelada não vira atual; em uso não exclui; nomes únicos sem diferenciar maiúsc., sem < > / \ " : ; ? * | = `
+CAD.props.collect(ents)->{n,types:{tipo:qtd},general:[item],typed:[item]} ; item={key,label,type,value,varies,readonly,options,general,layerColor}
+CAD.props.collectDefaults() ; applyDefaults(chave,valor) ; apply(ents|ids,chave,valor,'general'|'type')->{changed,skipped} (1 passo de undo; pula layer bloqueada) ; match(src,dsts)->qtd
+Contrato p/ types.props(e) (P5+): [{key,label,type:'number'|'angle'|'string'|'text'|'bool'|'point'|'select'|'color',value,readonly?,options?,min?,max?,group?,set?(e,valor)->patch}] ; point = {x,y,z}
+Eventos novos: layers:changed ; painéis: id 'layers' e 'props' ; CSS próprio injetado (#p4-css); no celular o painel abre como gaveta (body.cad-side-open)
+Comandos: LAYER(LA) PROPERTIES(PR,PROPS) -LAYER(-LA: Nova/Atual/Ligar/Desligar/Congelar/Descongelar/Bloquear/Desbloquear/Cor/Tipo/Espessura/Renomear/Excluir/Listar) LAYOFF LAYFRZ LAYLCK LAYISO LAYUNISO LAYCUR LAYON LAYTHW LAYULK PURGE(PU) MATCHPROP(MA)
+Transparência: envolve types[*].draw (ctx.globalAlpha = 1 - transp/100); tipos registrados depois são envolvidos no evento types:changed
+CAD.tests.p4()

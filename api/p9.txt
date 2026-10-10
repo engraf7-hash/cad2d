@@ -1,0 +1,10 @@
+API EXPORTADA P9
+CAD.dim: create(kind,defpts,{style,override,rot})->ent|createLeader(pts,str,{more,style}) add(ent|[ent],nome) measure(e) text(e) layout(e)->prims{line,arc,arrow,text} next('base'|'cont',dim,p2) size(st,campo) fmt{len,ang,num}
+CAD.dim.style: get(nome,override) set(nome,patch) del(nome) list() current() setCurrent(nome) schema  (doc.dimstyles; doc.current.dimstyle; tamanhos em mm de PAPEL x scale x mm->unidade)
+CAD.measure: prec dist delta(a,b)->{dx,dy,h,v,ang} angle(v,a,b) area(pts) perimeter(pts,closed) poly(pts,closed)->{length,area} ofEntity(e) sum(ents)->{length,area,count,open}
+TIPOS: dim{kind:'linear'|'aligned'|'angular'|'radius'|'diameter'|'arclen'|'ordinate',defpts,style,override{text,axis,origin,...estilo},rot(linear,graus)} ; leader{pts,str,style,override,more:[[pts]],h}
+defpts: linear/aligned [p1,p2,ptLinhaCota] | angular [vertice,p1,p2,ptArco] (anti-horário p1->p2) | radius/diameter [centro,ptCirculo,ptTexto|null] | arclen [c,p1,p2,ptArco] | ordinate [elemento,fimChamada]
+types extras (dim e leader): measure, layout, grip(e,idx,pt)->patch ; hit->boolean ; snapPts->[{p,mode}] ; props->[{group,key,label,type,value,options,patch(v)->patch}] ; explode->[ents sem id, just 'MC'|'ML'|'MR']
+toSVG->'<g>' com y negado | toDXF->{pairs:[[cod,val]],prims} (arclen: pairs=null) ; leader: {pairs,prims,text} | fromDXF({pairs}) (linear/aligned/diameter/radius)
+CMDS: DIMLINEAR DLI | DIMALIGNED DAL | DIMANGULAR DAN | DIMRADIUS DRA | DIMDIAMETER DDI | DIMARC DAR | DIMORDINATE DOR | DIMBASELINE DBA | DIMCONTINUE DCO | LEADER LE | MLEADER MLD | DIMTEXT DTX | DIMSTYLE DST | DIM
+MEDIÇÃO (raw): DIST DI (H/V, acumulada) | AREA AA (pontos, Objeto, Somar/Subtrair) | MEDANG MA | TOTAL TOT (por seleção) ; painel 'dimstyles'; menus Cotas/* e Consultar/*; CAD.tests.p9()

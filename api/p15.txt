@@ -1,0 +1,10 @@
+API EXPORTADA P15 (js/p15-pwa.js + service-worker.js + manifest.json + tools/build-release.js)
+CAD.release: version cache('cad2d-vX.Y.Z') sw(status) updateReady reg contract{cmds,types,fileio,mods,mode} cmpVersion(a,b)->-1|0|1
+CAD.release.check()->{ok,errors[],warns[],info} (módulos, atalhos/duplicados, tipos, fileio cad/dxf/svg, CAD.mode, migrate) ; runTests()->[{teste,falhas,erro}] (p1..p14, sem p15)
+CAD.release.verify() (check+runTests, imprime na linha de comando) ; smoke({force}) async -> [{passo,resultado}] (recusa desenho com conteúdo; force substitui o desenho)
+CAD.release.applyUpdate() (só sem alterações não salvas) ; install() (beforeinstallprompt) ; evento release:update{version}
+CAD.cmd: VERSAO ATUALIZAR INSTALAR VERIFICAR TESTEFUMACA ; CAD.ui.menu: Ajuda>Sobre/versão, Instalar aplicativo, Verificar integração
+service-worker.js: cache cad2d-vX.Y.Z, instala tolerante (allSettled), cache-first same-origin, ignora outras origens, SKIP_WAITING por mensagem, apaga caches cad2d-* antigos
+build: node tools/build-release.js [versão] [--partial] [--zip] [--root=pasta] -> ordena js/pN-*.js, reescreve <script> no index.html (entre <!-- P15:SCRIPTS:BEGIN/END -->), atualiza VERSION/FILES
+build checa: partes ausentes (v1=P1–P15, v2=P1–P19, v3=P1–P25), sintaxe, marcadores PART/END, wrapper, import/export, URLs externas, atalhos duplicados, CAD.x.y duplicado, manifest e ícones (PNG 192/512)
+Teste: CAD.tests.p15() (7 asserts)

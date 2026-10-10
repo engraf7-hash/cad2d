@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CAD 2D</title>
+<link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1f3a5f">
+  <link rel="apple-touch-icon" href="icons/192.png">
+</head>
+<body>
+<div id="app">
+  <div id="menubar"></div>
+  <div id="toolbar"></div>
+  <div id="main">
+    <div id="canvas-wrap"><canvas id="cv"></canvas></div>
+    <aside id="sidebar"><div id="panel-empty">Os painéis (Layers, Propriedades…) aparecem aqui conforme as partes forem adicionadas.</div></aside>
+  </div>
+  <div id="cmdbar">
+    <div id="cmdlog"></div>
+    <div id="cmdrow"><span id="cmdprompt">Comando:</span><input id="cmdinput" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  </div>
+  <div id="statusbar">
+    <span id="sb-coord">0.000, 0.000, 0.000</span>
+    <span id="sb-modes"></span>
+    <span id="sb-info"></span>
+  </div>
+</div>
+<!-- Ordem de carga: uma tag por parte, na ordem do plano -->
+  <!-- P15:SCRIPTS:BEGIN -->
+  <script src="js/p1-nucleo.js"></script>
+  <script src="js/p2-geometria.js"></script>
+  <script src="js/p3-precisao.js"></script>
+  <script src="js/p4-layers-props.js"></script>
+  <script src="js/p5-desenho.js"></script>
+  <script src="js/p6-edicao.js"></script>
+  <script src="js/p7-hatch.js"></script>
+  <script src="js/p8-texto.js"></script>
+  <script src="js/p9-cotas.js"></script>
+  <script src="js/p10-blocos.js"></script>
+  <script src="js/p11-arquivos.js"></script>
+  <script src="js/p12-dxf.js"></script>
+  <script src="js/p13-layout.js"></script>
+  <script src="js/p14-extras.js"></script>
+  <script src="js/p15-pwa.js"></script>
+  <!-- P15:SCRIPTS:END -->
+</body>
+</html>

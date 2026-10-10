@@ -1,0 +1,13 @@
+API EXPORTADA P5 (js/p5-desenho.js)  — depende só do contrato; sem DOM no engine
+Tipos (CAD.types.register): line pline circle arc ellipse spline point  (rect/polygon = pline). Cada def tem também label e dxf:[nomes DXF].
+ draw(ctx,e,view) usa view.toScreen(p)→{x,y}; não define cor/espessura (a P1 faz). bbox(e)→{min:{x,y},max:{x,y},x1,y1,x2,y2}
+ hit(e,pt,tol)→bool | snapPts(e)→[{pt,mode}] modes: endpoint midpoint center quadrant node
+ grips(e)→[{id,kind,pt,move(e,novoPt)→patch}] | transform(e,m)→PATCH (usar em ents.update; pode trocar type circle/arc→ellipse)
+ m aceito: função(pt)→pt, [a,b,c,d,e,f], [9 lineares], 3x3, {a..f}, {apply(pt)}. x'=a·x+c·y+e, y'=b·x+d·y+f
+ props(e)→contrato da P4 | explode(e)→[geom+layer/cor/lw/ltype] (só pline; demais [])
+ toDXF(e)→{etype,groups:[[cod,val]]} sem handle/layer/cor (a P12 acrescenta) | fromDXF(g)→{type,...geom}; g = [[cod,val]] | {groups} | {10:..,20:..}; POLYLINE aceita g.vertices
+ toSVG(e)→string de elemento com Y negado, sem estilo
+Dados: arc{c,r,a1,a2} graus ccw | ellipse{c,major(vetor rel. ao centro),ratio,a1,a2} a1/a2 = parâmetro em graus, 360 = completa | spline{fit,closed} Catmull-Rom centrípeta | pline.pts[i].bulge = segmento i→i+1
+Comandos: LINE(L) PLINE(PL) CIRCLE(C) ARC(A) RECTANG(REC,RECT) POLYGON(POL) ELLIPSE(EL) SPLINE(SPL) POINT(PO) PDMODE PDSIZE (doc.pdmode, doc.pdsize)
+CAD.draw: settings, mk(type,geom), commit(nome,spec), tess(e,tol)→{pts,closed}, bulgeArc, rectPts(p1,p2,{fillet,chamfer}), polygonPts(c,n,r,rot,circ), polygonByEdge, circle3, arc3, arcSER, plArea, plLength, dxfMap, fromDXF(g), defs
+Testes: await CAD.tests.p5()  → 228 ok, 0 falhas (núcleo simulado)

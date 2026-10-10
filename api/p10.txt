@@ -1,0 +1,9 @@
+API EXPORTADA P10
+CAD.blocks: list() get(n) exists(n) define(n,{base,ents,desc}) remove(n) rename(o,n)->erro|null usage(n) unused() attdefs(n) expand(ins,{oneLevel})->ents de mundo insMatrix(ins,blk) insert(n,pt,{sx,sy,rot,attrs,layer})->ent ensure(n) dxfBlock(n)->texto fromDXFBlock(n,base,ents) editing _pending
+CAD.blocks.library: list() groups() add({group,name,desc,make(b)|def}) load(n) userAdd(n) userDel(n) (IndexedDB 'cad2d-blocklib')
+Tipo insert{block,p,sx,sy,rot,attrs:{TAG:valor}}: draw bbox hit snapPts grips transform props explode(1 nível) toDXF(texto, c/ ATTRIB+SEQEND) fromDXF(pares[código,valor]|{código:valor}; opc. attribs[{tag,value}]) toSVG(<g>)
+Tipo attdef{tag,prompt,def,p,h,rot,invisible,constant} (só dentro de blocos/edição): mesmos métodos; explode→text
+Bloco: doc.blocks[n]={base,ents:[sem id],desc}; definições imutáveis (nova ref a cada mudança, via history.run); ByBlock = 'byblock'; layer '0' dentro do bloco herda a do insert
+Comandos: BLOCK(B) INSERT(I) ATTDEF(ATT) ATTEDIT(ATE) BEDIT(BE) BSAVE BCLOSE BLIST BPURGE BDEL BRENAME BLIBADD BLIBDEL ; painel 'blocks'; menu 'Bloco'; toolbar 'Blocos'
+Suposições a validar na integração: snapPts → [{pt,mode}]; grips → [{pt,kind,apply(np)->patch}]; props → [{key,label,type,value,group,readonly,set(v)->patch}]; arc a1/a2 em graus; CAD.ents.* já registram undo; draw(ctx,e,view) usa view.toScreen
+CAD.tests.p10()

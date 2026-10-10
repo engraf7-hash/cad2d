@@ -1,0 +1,15 @@
+API EXPORTADA P1
+CAD.doc|newDoc()|setDoc(d)|layer(n)|visible(e)|selectable(e)|resolve(e)->{color,lw,ltype}|space|clone(o)|has(mod)|dirty
+CAD.on/off/emit(ev,d) + eventos extras: cmd:print input:prompt types:changed ready ; CAD.Cancel ; CAD.toggle(modo) ; CAD.mode{...,gridStep,lwdisp}
+CAD.history: run{name,do,undo} begin(name) end() undo() redo() clear() canUndo() canRedo()   (comando = 1 grupo de undo)
+CAD.types: register(t,def) extend(t,parte) get(t) list() call(e,fn,...args) ; CAD.bboxOf(e) ; bbox => {x1,y1,x2,y2}
+CAD.ents: add(e|[e]) remove(id|[id]|ent) update(id,patch) get(id) query(fn|{campo:valor})
+CAD.xform.apply(m,pt) ; matriz afim {a,b,c,d,e,f}: x'=a*x+c*y+e, y'=b*x+d*y+f ; types.transform(e,m) RETORNA patch p/ ents.update
+CAD.sel: set add remove clear has ids size prune pick('click',pt)|('window'|'crossing',a,b)|('all')|('last') -> ids
+CAD.view: zoom(px/unid) pan{x,y}(centro) w h toScreen(p) toWorld(sx,sy) zoomAt(sx,sy,f) panBy(dx,dy) fit(x1,y1,x2,y2,m) extents() window(a,b) previous() save() pickTol()
+CAD.snap: register(modo,fn(pt,ctx,tolMundo)->{pt,dist}|null) resolve(pt,{base,tol})->{pt,mode} (osnap por registro, snap grid, ortho) ; CAD.ucs identidade
+CAD.parseCoord(texto,base,cursor)->pt|null ; CAD.lastPoint ; CAD.cursor ; CAD.cursorMode
+CAD.cmd: register({name,alias,raw?,run}) unregister find list print activeName last cancel whenIdle(cancel) run(nome|def)->Promise  (raw:true = fora do undo)
+CAD.input: point(p,{base,optional,keywords,preview(ctx,v,pt)})->pt|null|{keyword} number(p,{def,min,max,base}) angle string(p,{def,allowEmpty}) keyword(p,lista,def) select(p,{optional,noPickfirst})->ids ; pending()
+CAD.render: request() preview(fn|null) rubber(ctx,v,a,b) rubberRect(ctx,v,a,b) ; CAD.fileio: register({ext,label,import,export}) get list migrate(doc)
+CAD.ui: menu.add('Menu/Sub',rotulo,cmd) toolbar.add(grupo,{icone,rotulo,cmd}) panel.register({id,title,mount(el)}) ; comandos: UNDO U REDO R REGEN RE ZOOM Z ZOOMEXT ZE ZOOMWIN ZW ZOOMPREV ZP LINE L(provisório) ; CAD.tests.p1()

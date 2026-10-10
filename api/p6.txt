@@ -1,0 +1,13 @@
+API EXPORTADA P6 (CAD.edit)
+Comandos (CAD.cmd.register): ERASE(E,DEL) MOVE(M) COPY(CO,CP) ROTATE(RO) MIRROR(MI) SCALE(SC) STRETCH(S) OFFSET(O) TRIM(TR) EXTEND(EX) FILLET(F) CHAMFER(CHA) JOIN(J) EXPLODE(X)
+CAD.edit.settings {filletR,filletTrim,chamferD1,chamferD2,chamferAng,chamferMethod,chamferTrim,offsetDist,offsetErase,offsetLayer,edgeExtend,joinTol}
+CAD.edit.cmds[NOME]() → async; CAD.edit._setEnv({input,ents,history,sel,layers,space,print}) injeta Engine (testes)
+CAD.edit.core.toPath(e) → {segs:[{p1,p2,b,arc,c,r,th,a0,len}],closed} (line|arc|circle|pline)
+CAD.edit.core.trimOp(T,pick,edges,ext) → {specs:[ent]}|{err}; extendOp(T,pick,edges,ext) → {patch}|{err}
+CAD.edit.core.offsetEnt(e,d,sidePt) → {spec}|{err}; offsetPath(path,k) → {pts,closed}|null
+CAD.edit.core.filletPair(e1,pk1,e2,pk2,r,trim) / chamferPair(e1,pk1,e2,pk2,d1,d2,trim) → {ops}|{err}
+CAD.edit.core.cornerVertex(pts,closed,v,'f'|'c',a,b) → pts|null; joinEnts(ents,tol) → {remove:[ids],spec}|{err}
+CAD.edit.core.stretchPatch(e,win,d) → patch|null; explodeEnt(e) → [ent]|null; matrix.{trans,rot,scale,mirror}
+Usa do Engine: ents.add|remove|update|get|query({}); history.run/undo; input.point|select|keyword|number; sel.ids()|clear();
+  input.select(prompt,{single:true,withPoint:true}) → {id,pt}|string(keyword)|null; preview() pode devolver entidade ou array.
+Usa de types.get(t): transform, bbox, explode (com fallback local para line/arc/circle/pline/point). Menu/toolbar: grupo "Modificar".

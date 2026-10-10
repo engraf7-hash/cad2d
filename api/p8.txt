@@ -1,0 +1,9 @@
+API EXPORTADA P8
+CAD.text: create(kind,d) justify(e,j)->{just,p} geom(e) draw(ctx,spec,view) box(spec)->{x1,y1,x2,y2} measure(str,h,style)->larg.mundo plain(str) parse(str) expandFields(str) setVar(n,v) defaultHeight() lastH precision symbols[] editDialog(init)->{str,h,style,just,w,ls}|null|false
+CAD.text.styles: all() names() add(n,def) update(n,patch) remove(n) rename(a,b) setCurrent(n) current() ; CAD.text.style(nome) ; CAD.text.fields.register(nome,fn(args,prec))
+Estilo {font,h(0=perguntar),bold,italic,wf,oblique,upside,backwards} em doc.textstyles; atual em doc.current.tstyle; variáveis de campo em doc.vars
+Tipos: text{p,h,str,rot,style,just:L|C|R|A|M|F|TL..BR,p2(A/F),font,bold,italic,wf,obl} mtext{p,w,h,str,rot,style,just:TL..BR,ls} ; só mtext tem explode (-> texts)
+Códigos: %%c %%d %%p %%u %%o %%2 %%3 %%< %%> %%~ %%! %%nnn \U+XXXX ; MTEXT: \P {} \L\l \O\o \K\k \B\b \I\i(ext) \fFonte|b1|i1; \H2x; \W \Q \C1-7; \S1/2; \S1^2; \S1#2; \pql|c|r|j; ; campos %<\date|time|datetime|filename|author|units|count|var N|len #id|area #id|layer #id|x|y|prop #id campo [pN]>%
+types.props(e)->[{group,key,label,type,value,set(v)->patch,options?}] ; grips(e)->[{pt,kind:'move'|'width',edit(pt)->patch}] ; snapPts(e)->[{pt,mode:'insertion'}] ; CAD.snap modo 'insertion'
+types.toDXF(e)->[[cod,val],..] só do tipo (sem layer/cor) ; fromDXF(g: pares ou {cod:val})->entidade ; toSVG(e)->'<g>' assume grupo externo scale(1,-1) ; draw usa ctx.strokeStyle como cor base
+Comandos: TEXT(T,DT) MTEXT(MT) DDEDIT(ED) TEXTSTYLE(ST,STYLE) JUSTIFYTEXT(JT) SCALETEXT(STX) FIELD(FLD) ; painel 'textstyles' ; menu/toolbar 'Anotar' ; CAD.tests.p8()

@@ -1,0 +1,12 @@
+API EXPORTADA P14 (js/p14-extras.js)  — carregar depois da P5; engine sem DOM
+Novos tipos (types.register): xline{p,dir} ray{p,dir} (dir = vetor unitário) | region{loops:[{pts:[{x,y,z,bulge}]}],fill} (loop 0 = externo, demais = furos, even-odd)
+ mesmas funções da P5 (draw,bbox,hit,snapPts,grips,transform→PATCH,props,explode,toDXF,fromDXF,toSVG). xline/ray: bbox = só o ponto base; DXF: XLINE/RAY (10 base, 11 direção)
+ region: toDXF → {etype:'MULTI',items:[{etype:'LWPOLYLINE',groups}]} (P12 deve expandir); fromDXF → null
+Comandos: BREAK(BR) BREAKATPOINT(BAP) LENGTHEN(LEN) ALIGN(AL) REVERSE(REV) PEDIT(PE) EDITVERTEX(PEV) BASE ARRAY(AR) ARRAYRECT ARRAYPOLAR ARRAYPATH
+          XLINE(XL) RAY DONUT(DO) BOUNDARY(BO) REGION(REG) FENCE LASSO SELECTSIMILAR(SELSIM) SELBYLAYER SELBYTYPE QSELECT(QS) GRIP
+CAD.selx: fence(poly)→ids | lasso(poly,'Janela'|'Cruzamento')→ids | similar(ids,by=['type','layer']) | byLayer(nome) | byType(tipo) | quick({type,key,op,value}) op: = <> > < >= <= contem
+CAD.grips: list(ids?)→[{ent,gid,kind,pt,grip}] | hit(wpt,tolMundo,ids?) | patch(entId,gid,pt) | apply(entId,gid,pt,copiar?) | begin(hit) (P1 chama no mouse-down sobre grip)
+CAD.extra: settings{donutIn,donutOut,boundObj,delobj,similarBy,lassoMode} | boundaryAt(pt)→{pts}|{circle,pts}|null | breakEnt(e,pA,pB|null)→[specs]|null
+           lengthenPatch(e,pick,'Delta'|'Porcentagem'|'Total',v)→patch|null | joinChain(path,[{id,path}],fuzz) | arrayRect/arrayPolar/arrayPath → [specs] | toPath(e) | revPts(pts,closed) | defs
+Dados extras no doc: doc.basepoint {x,y,z} (comando BASE)
+Testes: await CAD.tests.p14()  (exige P5 carregada) → 173 ok, 0 falhas (núcleo simulado)

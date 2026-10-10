@@ -1,0 +1,67 @@
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#fff;color:#222;
+  font:13px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+#app{display:grid;grid-template-rows:28px auto 1fr auto 30px;height:100%}
+
+/* menu */
+#menubar{display:flex;background:#f1f3f4;border-bottom:1px solid #d0d4d8;position:relative;z-index:30}
+.mi{position:relative}
+.ml{display:block;padding:6px 12px;cursor:pointer;user-select:none}
+.mi:hover>.ml,.mi.open>.ml{background:#dde3ea}
+.dd{display:none;position:absolute;left:0;top:100%;min-width:190px;background:#fff;border:1px solid #c5cad0;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);padding:3px 0;z-index:40}
+.mi.open>.dd{display:block}
+.it{padding:5px 14px;cursor:pointer;white-space:nowrap;position:relative}
+.it:hover{background:#e3edfb}
+.sub>.dd{left:100%;top:-4px}
+.sub:hover>.dd{display:block}
+.sep{height:1px;margin:3px 0;background:#e0e3e6}
+
+/* toolbar */
+#toolbar{display:flex;align-items:center;gap:2px;padding:0 6px;background:#f7f8f9;border-bottom:1px solid #d0d4d8;overflow-x:auto}
+.tg{display:flex;gap:2px;padding-right:6px;margin-right:6px;border-right:1px solid #dde0e3}
+.tg:last-child{border-right:0}
+.tb{min-width:30px;height:30px;padding:0 6px;border:1px solid transparent;border-radius:4px;background:none;cursor:pointer;font-size:14px}
+.tb:hover{background:#e3edfb;border-color:#b9cdee}
+.tb svg{width:18px;height:18px;vertical-align:middle}
+
+/* área principal */
+#main{display:flex;min-height:0}
+#canvas-wrap{flex:1;position:relative;min-width:0;background:#fff}
+#cv{position:absolute;left:0;top:0;cursor:none;touch-action:none;background:#fff}
+#sidebar{width:260px;border-left:1px solid #d0d4d8;background:#f7f8f9;overflow-y:auto}
+#panel-empty{padding:14px;color:#777;font-size:12px}
+.panel{border-bottom:1px solid #d9dcdf}
+.ph{padding:6px 10px;font-weight:600;background:#eceff1;cursor:pointer;user-select:none}
+.pb{padding:8px 10px}
+.panel.closed .pb{display:none}
+
+/* linha de comando */
+#cmdbar{border-top:1px solid #c5cad0;background:#fdfdfd}
+#cmdlog{height:54px;overflow-y:auto;padding:3px 8px;font:12px/1.35 ui-monospace,Consolas,monospace;color:#555;white-space:pre-wrap}
+#cmdrow{display:flex;align-items:center;gap:6px;padding:2px 8px 4px;border-top:1px solid #eceff1}
+#cmdprompt{font:12px ui-monospace,Consolas,monospace;color:#1a4fa0;white-space:nowrap;max-width:60%;overflow:hidden;text-overflow:ellipsis}
+#cmdinput{flex:1;border:0;outline:0;font:13px ui-monospace,Consolas,monospace;background:transparent;min-width:60px}
+
+/* barra de status */
+#statusbar{display:flex;align-items:center;gap:12px;padding:0 8px;background:#f1f3f4;border-top:1px solid #d0d4d8;font-size:12px}
+#sb-coord{font-family:ui-monospace,Consolas,monospace;min-width:210px}
+#sb-modes{display:flex;gap:2px}
+.sbtn{padding:2px 7px;border:1px solid #ccd0d4;border-radius:3px;background:#fff;color:#777;cursor:pointer;font-size:11px;user-select:none}
+.sbtn.on{background:#1a73e8;border-color:#1a73e8;color:#fff}
+#sb-info{margin-left:auto;color:#555}
+.sw{display:inline-block;width:10px;height:10px;border:1px solid #888;margin-right:4px;vertical-align:-1px}
+
+@media (max-width:700px){#sidebar{display:none}}
+
+/* toque */
+.touchbar{display:none;position:absolute;right:8px;bottom:8px;gap:6px;z-index:5}
+.tbtn{min-width:52px;height:44px;padding:0 10px;border:1px solid #b9c0c8;border-radius:8px;background:rgba(255,255,255,.92);font-size:15px}
+.tbtn:active{background:#dde8fb}
+@media (pointer:coarse){
+  .touchbar{display:flex}
+  #cmdinput{font-size:16px}
+  .tb{min-width:40px;height:40px}
+  #toolbar{height:48px}
+  .sbtn{padding:6px 9px}
+}
