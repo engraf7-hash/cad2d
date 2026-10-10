@@ -740,7 +740,6 @@ function boot(){
   var t=0;
   CAD.on&&CAD.on('doc:changed',function(){clearTimeout(t);t=setTimeout(function(){
     if(CUR!=='model'&&!getL(CUR)){showLayout('model');}else if(OV)ovRender();renderTabs();},150);});
-  CAD.on&&CAD.on('cmd:print',function(){openWizard();});
   try{if(CAD.fileio&&CAD.fileio.register)CAD.fileio.register({ext:'pdf',label:'PDF (layout/plotagem)',export:function(doc){
     var job=layouts().length?{source:'layout',layout:layouts()[0].name}:{source:'model',paper:'A3',orient:'landscape'};
     return pdfBlob(pdfBuild([buildSheet(job)],{title:'CAD 2D'}));}});}catch(x){}
