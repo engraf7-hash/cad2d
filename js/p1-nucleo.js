@@ -494,7 +494,7 @@ CAD.ui={
 };
 if(typeof document==='undefined')return;   // execução sem navegador (testes em Node)
 
-var cv,cx,wrap,dpr=1,raf=0,sized=false,mx=-1,my=-1,inside=false,logEl,inp,promptEl,hist=[],hpos=0;
+var edit=null,cv,cx,wrap,dpr=1,raf=0,sized=false,mx=-1,my=-1,inside=false,logEl,inp,promptEl,hist=[],hpos=0;
 function $(i){return document.getElementById(i);}
 function coarse(){return !!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches);}
 function focusInp(){if(!coarse())inp.focus({preventScroll:true});}
@@ -609,6 +609,36 @@ function drawMeasure(a,b){   // medida ao vivo no meio do segmento; se afasta do
   cx.fillStyle='rgba(255,255,230,.95)';cx.strokeStyle='#999';cx.lineWidth=1;cx.fillRect(bx,by,w,h);cx.strokeRect(bx+.5,by+.5,w-1,h-1);
   cx.fillStyle='#111';cx.textBaseline='middle';cx.fillText(txt,bx+5,by+h/2+.5);cx.restore();
 }
+/* ---- mover objetos / editar pelos pontos (grips) arrastando ---- */
+function editPatches(q){
+  var out=[];
+  if(edit.mode==='grip'){out.push({id:edit.ids[0],patch:edit.grip.move(edit.orig[edit.ids[0]],{x:q.x,y:q.y,z:q.z||0})});}
+  else{
+    var m={a:1,b:0,c:0,d:1,e:q.x-edit.base.x,f:q.y-edit.base.y};
+    edit.ids.forEach(function(id){var o=edit.orig[id],d=T[o.type];if(d&&d.transform)out.push({id:id,patch:d.transform(o,m)});});
+  }
+  return out;
+}
+function gripList(){   // grips dos objetos selecionados (até 100 objetos)
+  var ids=CAD.sel.ids(),out=[];if(!ids.length||ids.length>100)return out;
+  ids.forEach(function(id){var e=CAD.ents.get(id),d=e&&T[e.type];if(!e||!d||!d.grips||!CAD.visible(e))return;
+    var g;try{g=d.grips(e)||[];}catch(x){return;}g.forEach(function(gr){if(gr&&gr.pt&&gr.move)out.push({e:e,g:gr});});});
+  return out;
+}
+function drawEditGhost(){
+  var q=CAD.cursor;if(!q)return;
+  editPatches(q).forEach(function(r){
+    var o=edit.orig[r.id],gh=Object.assign({},o,r.patch),gr=CAD.resolve(gh);
+    drawEnt(gh,'#1a73e8',[6,4],Math.max(2,lwPx(gr.lw)));
+  });
+  cx.save();CAD.render.rubber(cx,V,edit.base,q);cx.restore();
+  drawMeasure(edit.base,q);
+}
+function drawGrips(){
+  gripList().forEach(function(it){var s=V.toScreen(it.g.pt),mid=it.g.kind==='move';
+    cx.save();cx.fillStyle=mid?'#fff':'#1a73e8';cx.strokeStyle='#1a73e8';cx.lineWidth=1.5;
+    cx.fillRect(s.x-4,s.y-4,8,8);cx.strokeRect(s.x-4.5,s.y-4.5,9,9);cx.restore();});
+}
 function draw(){
   raf=0;if(!cx)return;
   cx.setTransform(dpr,0,0,dpr,0,0);cx.fillStyle='#fff';cx.fillRect(0,0,V.w,V.h);
@@ -617,8 +647,10 @@ function draw(){
   cx.strokeStyle='#f0c8c8';cx.beginPath();cx.moveTo(0,Math.round(o.y)+0.5);cx.lineTo(V.w,Math.round(o.y)+0.5);cx.stroke();
   cx.strokeStyle='#c8e6c8';cx.beginPath();cx.moveTo(Math.round(o.x)+0.5,0);cx.lineTo(Math.round(o.x)+0.5,V.h);cx.stroke();
   var L=CAD.doc.entities,i,e,r;
-  for(i=0;i<L.length;i++){e=L[i];if(!CAD.visible(e))continue;r=CAD.resolve(e);drawEnt(e,ink(r.color),DASH[r.ltype]||[],lwPx(r.lw));}
-  for(i=0;i<L.length;i++){e=L[i];if(CAD.sel.has(e.id)&&CAD.visible(e))drawEnt(e,'#1a73e8',[6,4],2);}
+  var hid=edit&&edit.moved?edit.orig:null;
+  for(i=0;i<L.length;i++){e=L[i];if(!CAD.visible(e)||(hid&&hid[e.id]))continue;r=CAD.resolve(e);drawEnt(e,ink(r.color),DASH[r.ltype]||[],lwPx(r.lw));}
+  for(i=0;i<L.length;i++){e=L[i];if(CAD.sel.has(e.id)&&CAD.visible(e)&&!(hid&&hid[e.id]))drawEnt(e,'#1a73e8',[6,4],2);}
+  if(edit&&edit.moved)drawEditGhost();
   cx.save();cx.strokeStyle='#555';cx.fillStyle='#555';cx.lineWidth=1;
   if(CAD.render.preview)try{CAD.render.preview(cx,V);}catch(x){console.error(x);}
   var pd=CAD.input.pending();
@@ -632,6 +664,7 @@ function draw(){
   if(pd&&!pd.opts.preview&&pd.kind==='point'&&pd.opts.base&&CAD.cursor)CAD.render.rubber(cx,V,pd.opts.base,CAD.cursor);   // sem preview próprio: traço elástico
   cx.restore();
   if(pd&&pd.opts.base&&CAD.cursor&&(pd.kind==='point'||pd.kind==='number'||pd.kind==='angle'))drawMeasure(pd.opts.base,CAD.cursor);
+  if(!pd&&!CAD.cmd.activeName()&&!(edit&&edit.moved))drawGrips();
   // ícone do UCS
   cx.save();cx.lineWidth=1.5;cx.strokeStyle='#d33';cx.beginPath();cx.moveTo(30,V.h-30);cx.lineTo(60,V.h-30);cx.stroke();
   cx.strokeStyle='#2a2';cx.beginPath();cx.moveTo(30,V.h-30);cx.lineTo(30,V.h-60);cx.stroke();
@@ -648,7 +681,7 @@ function draw(){
 
 /* ---- interação com o canvas ---- */
 function updateCursor(){
-  var raw=V.toWorld(mx,my),pd=CAD.input.pending(),r=CAD.snap.resolve(raw,{base:pd&&pd.opts.base?pd.opts.base:null});
+  var raw=V.toWorld(mx,my),pd=CAD.input.pending(),r=CAD.snap.resolve(raw,{base:pd&&pd.opts.base?pd.opts.base:(edit&&edit.moved?edit.base:null)});
   CAD.cursor=r.pt;CAD.cursorMode=r.mode;setCoord(r.pt);
 }
 function initCanvas(){
@@ -667,6 +700,7 @@ function initCanvas(){
   cv.addEventListener('pointermove',function(e){
     if(e.pointerType==='touch'){touchMove(e);return;}
     var r=cv.getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top;inside=true;
+    if(edit&&!edit.moved&&Math.hypot(e.clientX-edit.x0,e.clientY-edit.y0)>4)edit.moved=true;
     if(panning){V.panBy(e.clientX-lx,e.clientY-ly);lx=e.clientX;ly=e.clientY;}
     updateCursor();CAD.render.request();
   });
@@ -706,6 +740,33 @@ function initCanvas(){
     if(e.type==='pointerup'&&tap&&tap.id===e.pointerId&&!tap.moved&&Date.now()-tap.t<600){mx=q.x;my=q.y;updateCursor();canvasClick(false);}
     delete ptrs[e.pointerId];if(nptr()<2)pinch=null;if(nptr()===0)tap=null;
   }
+  function startEdit(e){   // sem comando ativo: arrastar grip = edita ponto; arrastar objeto = move
+    if(CAD.input.pending()||CAD.cmd.activeName()||!CAD.cursor)return false;
+    var c=CAD.cursor,best=null,bd=8,gl=gripList(),i,ids,orig={};
+    for(i=0;i<gl.length;i++){var s=V.toScreen(gl[i].g.pt),dd=Math.hypot(s.x-mx,s.y-my);if(dd<=bd){bd=dd;best=gl[i];}}
+    if(best){
+      orig[best.e.id]=CAD.clone(best.e);
+      edit={mode:'grip',ids:[best.e.id],orig:orig,grip:best.g,base:{x:best.g.pt.x,y:best.g.pt.y,z:best.g.pt.z||0},x0:e.clientX,y0:e.clientY,moved:false};
+    }else{
+      ids=CAD.sel.pick('click',c);if(!ids.length)return false;
+      if(!CAD.sel.has(ids[0]))CAD.sel.set(ids);
+      CAD.sel.ids().forEach(function(id){var en=CAD.ents.get(id);if(en&&T[en.type]&&T[en.type].transform&&CAD.selectable(en))orig[id]=CAD.clone(en);});
+      if(!Object.keys(orig).length)return false;
+      edit={mode:'move',ids:Object.keys(orig),orig:orig,base:{x:c.x,y:c.y,z:c.z||0},x0:e.clientX,y0:e.clientY,moved:false};
+    }
+    try{cv.setPointerCapture(e.pointerId);}catch(x){}
+    CAD.render.request();return true;
+  }
+  function endEdit(e){
+    var ed=edit;if(!ed)return;
+    var r=cv.getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top;
+    if(ed.moved){updateCursor();var ps=editPatches(CAD.cursor);edit=null;
+      CAD.history.begin(ed.mode==='grip'?'Editar ponto':'Mover');
+      try{ps.forEach(function(p){if(p.patch&&Object.keys(p.patch).length)CAD.ents.update(p.id,p.patch);});}finally{CAD.history.end();}
+    }else edit=null;
+    try{cv.releasePointerCapture(e.pointerId);}catch(x){}
+    updateCursor();CAD.render.request();
+  }
   cv.addEventListener('pointerdown',function(e){
     if(e.pointerType==='touch'){e.preventDefault();touchDown(e);return;}
     focusInp();closeMenus();
@@ -716,6 +777,7 @@ function initCanvas(){
     }
     if(e.button!==0)return;
     var r=cv.getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top;updateCursor();
+    if(!e.shiftKey&&startEdit(e)){e.preventDefault();return;}
     var pd0=CAD.input.pending();
     if(pd0&&pd0.kind==='point'&&pd0.opts.base){      // 2º ponto: segura e arrasta; ao soltar confirma (clique simples também funciona)
       pressed={id:e.pointerId,shift:e.shiftKey};try{cv.setPointerCapture(e.pointerId);}catch(x){}CAD.render.request();return;
@@ -725,12 +787,13 @@ function initCanvas(){
   cv.addEventListener('pointerup',function(e){
     if(e.pointerType==='touch'){touchUp(e);return;}
     if(e.button===1){panning=false;return;}
+    if(e.button===0&&edit){endEdit(e);return;}
     if(e.button===0&&pressed&&pressed.id===e.pointerId){
       var r=cv.getBoundingClientRect(),sh=pressed.shift;pressed=null;try{cv.releasePointerCapture(e.pointerId);}catch(x){}
       mx=e.clientX-r.left;my=e.clientY-r.top;updateCursor();canvasClick(sh);
     }
   });
-  cv.addEventListener('pointercancel',function(e){if(e.pointerType==='touch')touchUp(e);panning=false;pressed=null;});
+  cv.addEventListener('pointercancel',function(e){if(e.pointerType==='touch')touchUp(e);panning=false;pressed=null;edit=null;CAD.render.request();});
   // barra de toque (só aparece em telas touch): Esc / Enter / teclado
   var tb=el('div','touchbar');
   [['Esc',function(){inp.value='';if(CAD.cmd.activeName()||CAD.input.pending())CAD.cmd.cancel();else CAD.sel.clear();}],
@@ -756,6 +819,7 @@ function initKeys(){
     if(foreign)return;
     var fk={F3:'osnap',F7:'grid',F8:'ortho',F9:'snap',F10:'polar',F12:'dynin'};
     if(fk[e.key]){e.preventDefault();CAD.toggle(fk[e.key]);return;}
+    if(e.key==='Escape'&&edit){e.preventDefault();edit=null;CAD.render.request();return;}
     if(e.key==='Escape'){e.preventDefault();inp.value='';if(CAD.cmd.activeName()||CAD.input.pending())CAD.cmd.cancel();else CAD.sel.clear();return;}
     if(e.key==='Delete'&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&!e.defaultPrevented){   // Delete = apaga a seleção (pickfirst)
       if(t===inp&&inp.value!=='')return;                       // texto na linha de comando: Delete edita o texto
