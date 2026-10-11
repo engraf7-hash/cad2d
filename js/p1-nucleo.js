@@ -610,7 +610,14 @@ function draw(){
   for(i=0;i<L.length;i++){e=L[i];if(CAD.sel.has(e.id)&&CAD.visible(e))drawEnt(e,'#1a73e8',[6,4],2);}
   cx.save();cx.strokeStyle='#555';cx.fillStyle='#555';cx.lineWidth=1;
   if(CAD.render.preview)try{CAD.render.preview(cx,V);}catch(x){console.error(x);}
-  var pd=CAD.input.pending();if(pd&&pd.opts.preview&&CAD.cursor)try{pd.opts.preview(cx,V,CAD.cursor);}catch(x){console.error(x);}
+  var pd=CAD.input.pending();
+  if(pd&&typeof pd.opts.preview==='function'&&CAD.cursor)try{
+    if(pd.opts.preview.length>=2)pd.opts.preview(cx,V,CAD.cursor);          // estilo P1: preview(ctx,view,pt) desenha direto
+    else{                                                                   // estilo P5: preview(pt) devolve a(s) entidade(s) fantasma
+      var gh=pd.opts.preview(CAD.cursor);if(gh&&!Array.isArray(gh))gh=[gh];
+      (gh||[]).forEach(function(ge){if(!ge||!ge.type)return;var gr=CAD.resolve(ge);cx.save();drawEnt(ge,ink(gr.color),[],lwPx(gr.lw));cx.restore();});
+    }
+  }catch(x){console.error('preview',x);}
   if(pd&&!pd.opts.preview&&pd.kind==='point'&&pd.opts.base&&CAD.cursor)CAD.render.rubber(cx,V,pd.opts.base,CAD.cursor);   // sem preview próprio: traço elástico
   cx.restore();
   if(pd&&pd.opts.base&&CAD.cursor&&(pd.kind==='point'||pd.kind==='number'||pd.kind==='angle'))drawMeasure(pd.opts.base,CAD.cursor);
