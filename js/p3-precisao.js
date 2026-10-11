@@ -16,6 +16,7 @@ function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
 function norm(a){ a%=TAU; return a<0?a+TAU:a; }
 function unit(a,b){ var d=dist(a,b); return d<EPS?null:{x:(b.x-a.x)/d,y:(b.y-a.y)/d}; }
 function fmt(n){ return String(Math.round(n*1000)/1000); }
+function fmt2(n){ return (Math.round(n*100)/100).toFixed(2); }   /* mostradores: sempre 2 casas decimais */
 
 /* ---------- estado padrão ---------- */
 var mode=CAD.mode=CAD.mode||{};
@@ -459,7 +460,7 @@ snap.resolve=function(pt,ctx){
     res.pt={x:last.x+u.x*pr,y:last.y+u.y*pr,z:pt.z||0};
     var ang=norm(Math.atan2(u.y,u.x))*R2D;
     res.guide={from:last,to:res.pt,angle:ang};
-    res.label=(res.mode==='ortho'?'Orto':'Polar')+': '+fmt(pr)+' < '+fmt(ang)+'°';
+    res.label=(res.mode==='ortho'?'Orto':'Polar')+': '+fmt2(pr)+' < '+fmt2(ang)+'°';
   } else if(mode.snap){
     res.pt={x:Math.round(pt.x/st)*st,y:Math.round(pt.y/st)*st,z:pt.z||0}; res.mode='snap';
   }
@@ -677,8 +678,8 @@ function showDyn(ev,res,base){
     document.body.appendChild(dyn);
   }
   var p=res.pt,l=base||null,txt;
-  if(l){ var d=dist(p,l); txt=fmt(d)+' < '+fmt(norm(Math.atan2(p.y-l.y,p.x-l.x))*R2D)+'°'; }
-  else txt=fmt(p.x)+', '+fmt(p.y);
+  if(l){ var d=dist(p,l); txt=fmt2(d)+' < '+fmt2(norm(Math.atan2(p.y-l.y,p.x-l.x))*R2D)+'°'; }
+  else txt=fmt2(p.x)+', '+fmt2(p.y);
   if(res.mode&&LAB[res.mode]) txt+='  ['+LAB[res.mode]+']';
   dyn.textContent=txt; dyn.style.left=(ev.clientX+18)+'px'; dyn.style.top=(ev.clientY+18)+'px'; dyn.style.display='block';
 }

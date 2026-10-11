@@ -589,14 +589,25 @@ function drawEnt(e,color,dash,lw){
   try{d.draw(cx,e,V);}catch(x){console.error('draw '+e.type,x);}
   cx.restore();
 }
-function drawMeasure(a,b){   // comprimento e ângulo ao vivo junto ao cursor (some se o Dynamic Input da P3 já mostra)
-  var dy=document.getElementById('cad-dynin');if(dy&&dy.style.display!=='none'&&dy.offsetParent!==null&&(dy.textContent||'').trim())return;
-  var dx=b.x-a.x,dyy=b.y-a.y,len=Math.hypot(dx,dyy),ang=Math.atan2(dyy,dx)*180/Math.PI;if(ang<0)ang+=360;
-  var u=CAD.doc.units||'',txt=len.toFixed(3).replace(/\.?0+$/,'')+(u?' '+u:'')+'  ∠ '+ang.toFixed(1)+'°';
-  var p=V.toScreen(b),x=p.x+16,y=p.y+22;cx.save();cx.font='12px system-ui';
-  var w=cx.measureText(txt).width+10;if(x+w>V.w)x=p.x-w-10;if(y+18>V.h)y=p.y-12;
-  cx.fillStyle='rgba(255,255,230,.95)';cx.strokeStyle='#999';cx.lineWidth=1;cx.fillRect(x,y-13,w,18);cx.strokeRect(x+.5,y-12.5,w-1,18);
-  cx.fillStyle='#111';cx.fillText(txt,x+5,y);cx.restore();
+function drawMeasure(a,b){   // medida ao vivo no meio do segmento; se afasta do Dynamic Input (P3) para um não cobrir o outro
+  var dyEl=document.getElementById('cad-dynin'),dynOn=!!(dyEl&&dyEl.style.display!=='none'&&(dyEl.textContent||'').trim());
+  var dx=b.x-a.x,dyw=b.y-a.y,len=Math.hypot(dx,dyw),ang=Math.atan2(dyw,dx)*180/Math.PI;if(ang<0)ang+=360;
+  var u=CAD.doc.units||'',txt=len.toFixed(2)+(u?' '+u:'');
+  if(!dynOn)txt+='  ∠ '+ang.toFixed(2)+'°';                       // sem Dynamic Input, mostra o ângulo também
+  var pa=V.toScreen(a),pb=V.toScreen(b),mxs=(pa.x+pb.x)/2,mys=(pa.y+pb.y)/2,sx=pb.x-pa.x,sy=pb.y-pa.y,L=Math.hypot(sx,sy),nx=0,ny=-1;
+  if(L>1){nx=-sy/L;ny=sx/L;if(ny>0){nx=-nx;ny=-ny;}}              // normal ao segmento, apontando para cima
+  cx.save();cx.font='12px system-ui';
+  var w=Math.ceil(cx.measureText(txt).width)+10,h=18,obs=null;
+  if(dynOn){var rc=dyEl.getBoundingClientRect(),rv=cv.getBoundingClientRect();obs={x:rc.left-rv.left-6,y:rc.top-rv.top-6,w:rc.width+12,h:rc.height+12};}
+  function hit(x,y){return obs&&x<obs.x+obs.w&&x+w>obs.x&&y<obs.y+obs.h&&y+h>obs.y;}
+  var offs=[16,32,-16,-32,48,-48],bx=0,by=0,k,x,y,found=false;
+  for(k=0;k<offs.length&&!found;k++){
+    x=Math.max(2,Math.min(V.w-w-2,mxs+nx*offs[k]-w/2));y=Math.max(2,Math.min(V.h-h-2,mys+ny*offs[k]-h/2));
+    if(!hit(x,y)){bx=x;by=y;found=true;}
+  }
+  if(!found){bx=Math.max(2,Math.min(V.w-w-2,mxs-w/2));by=Math.max(2,Math.min(V.h-h-2,mys-h-20));}
+  cx.fillStyle='rgba(255,255,230,.95)';cx.strokeStyle='#999';cx.lineWidth=1;cx.fillRect(bx,by,w,h);cx.strokeRect(bx+.5,by+.5,w-1,h-1);
+  cx.fillStyle='#111';cx.textBaseline='middle';cx.fillText(txt,bx+5,by+h/2+.5);cx.restore();
 }
 function draw(){
   raf=0;if(!cx)return;
