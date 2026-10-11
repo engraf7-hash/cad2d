@@ -589,6 +589,15 @@ function drawEnt(e,color,dash,lw){
   try{d.draw(cx,e,V);}catch(x){console.error('draw '+e.type,x);}
   cx.restore();
 }
+function drawMeasure(a,b){   // comprimento e ângulo ao vivo junto ao cursor (some se o Dynamic Input da P3 já mostra)
+  var dy=document.getElementById('cad-dynin');if(dy&&dy.style.display!=='none'&&dy.offsetParent!==null&&(dy.textContent||'').trim())return;
+  var dx=b.x-a.x,dyy=b.y-a.y,len=Math.hypot(dx,dyy),ang=Math.atan2(dyy,dx)*180/Math.PI;if(ang<0)ang+=360;
+  var u=CAD.doc.units||'',txt=len.toFixed(3).replace(/\.?0+$/,'')+(u?' '+u:'')+'  ∠ '+ang.toFixed(1)+'°';
+  var p=V.toScreen(b),x=p.x+16,y=p.y+22;cx.save();cx.font='12px system-ui';
+  var w=cx.measureText(txt).width+10;if(x+w>V.w)x=p.x-w-10;if(y+18>V.h)y=p.y-12;
+  cx.fillStyle='rgba(255,255,230,.95)';cx.strokeStyle='#999';cx.lineWidth=1;cx.fillRect(x,y-13,w,18);cx.strokeRect(x+.5,y-12.5,w-1,18);
+  cx.fillStyle='#111';cx.fillText(txt,x+5,y);cx.restore();
+}
 function draw(){
   raf=0;if(!cx)return;
   cx.setTransform(dpr,0,0,dpr,0,0);cx.fillStyle='#fff';cx.fillRect(0,0,V.w,V.h);
@@ -602,7 +611,9 @@ function draw(){
   cx.save();cx.strokeStyle='#555';cx.fillStyle='#555';cx.lineWidth=1;
   if(CAD.render.preview)try{CAD.render.preview(cx,V);}catch(x){console.error(x);}
   var pd=CAD.input.pending();if(pd&&pd.opts.preview&&CAD.cursor)try{pd.opts.preview(cx,V,CAD.cursor);}catch(x){console.error(x);}
+  if(pd&&!pd.opts.preview&&pd.kind==='point'&&pd.opts.base&&CAD.cursor)CAD.render.rubber(cx,V,pd.opts.base,CAD.cursor);   // sem preview próprio: traço elástico
   cx.restore();
+  if(pd&&pd.opts.base&&CAD.cursor&&(pd.kind==='point'||pd.kind==='number'||pd.kind==='angle'))drawMeasure(pd.opts.base,CAD.cursor);
   // ícone do UCS
   cx.save();cx.lineWidth=1.5;cx.strokeStyle='#d33';cx.beginPath();cx.moveTo(30,V.h-30);cx.lineTo(60,V.h-30);cx.stroke();
   cx.strokeStyle='#2a2';cx.beginPath();cx.moveTo(30,V.h-30);cx.lineTo(30,V.h-60);cx.stroke();
@@ -624,7 +635,7 @@ function updateCursor(){
 }
 function initCanvas(){
   cv=$('cv');cx=cv.getContext('2d');wrap=$('canvas-wrap');
-  var panning=false,lx=0,ly=0,lastMid=0;
+  var panning=false,lx=0,ly=0,lastMid=0,pressed=null;
   function resize(){
     var r=wrap.getBoundingClientRect();dpr=window.devicePixelRatio||1;
     cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));
@@ -687,10 +698,21 @@ function initCanvas(){
     }
     if(e.button!==0)return;
     var r=cv.getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top;updateCursor();
+    var pd0=CAD.input.pending();
+    if(pd0&&pd0.kind==='point'&&pd0.opts.base){      // 2º ponto: segura e arrasta; ao soltar confirma (clique simples também funciona)
+      pressed={id:e.pointerId,shift:e.shiftKey};try{cv.setPointerCapture(e.pointerId);}catch(x){}CAD.render.request();return;
+    }
     canvasClick(e.shiftKey);
   });
-  cv.addEventListener('pointerup',function(e){if(e.pointerType==='touch')touchUp(e);else if(e.button===1)panning=false;});
-  cv.addEventListener('pointercancel',function(e){if(e.pointerType==='touch')touchUp(e);panning=false;});
+  cv.addEventListener('pointerup',function(e){
+    if(e.pointerType==='touch'){touchUp(e);return;}
+    if(e.button===1){panning=false;return;}
+    if(e.button===0&&pressed&&pressed.id===e.pointerId){
+      var r=cv.getBoundingClientRect(),sh=pressed.shift;pressed=null;try{cv.releasePointerCapture(e.pointerId);}catch(x){}
+      mx=e.clientX-r.left;my=e.clientY-r.top;updateCursor();canvasClick(sh);
+    }
+  });
+  cv.addEventListener('pointercancel',function(e){if(e.pointerType==='touch')touchUp(e);panning=false;pressed=null;});
   // barra de toque (só aparece em telas touch): Esc / Enter / teclado
   var tb=el('div','touchbar');
   [['Esc',function(){inp.value='';if(CAD.cmd.activeName()||CAD.input.pending())CAD.cmd.cancel();else CAD.sel.clear();}],
@@ -717,6 +739,12 @@ function initKeys(){
     var fk={F3:'osnap',F7:'grid',F8:'ortho',F9:'snap',F10:'polar',F12:'dynin'};
     if(fk[e.key]){e.preventDefault();CAD.toggle(fk[e.key]);return;}
     if(e.key==='Escape'){e.preventDefault();inp.value='';if(CAD.cmd.activeName()||CAD.input.pending())CAD.cmd.cancel();else CAD.sel.clear();return;}
+    if(e.key==='Delete'&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&!e.defaultPrevented){   // Delete = apaga a seleção (pickfirst)
+      if(t===inp&&inp.value!=='')return;                       // texto na linha de comando: Delete edita o texto
+      if(CAD.input.pending()||CAD.cmd.activeName())return;     // comando em andamento: não interfere
+      if(CAD.sel.size()>0&&CAD.cmd.find('ERASE')){e.preventDefault();CAD.cmd.run('ERASE');}
+      return;
+    }
     if((e.ctrlKey||e.metaKey)&&!e.altKey){
       var k=e.key.toLowerCase();
       if(k==='z'&&!e.shiftKey){e.preventDefault();CAD.cmd.whenIdle(true).then(function(){CAD.history.undo();});}
