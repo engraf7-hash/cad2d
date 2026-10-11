@@ -515,7 +515,7 @@ function ddEl(node){
 }
 function buildMenus(){
   if(!ui.ready)return;var bar=$('menubar');bar.innerHTML='';
-  MENU.list.forEach(function(top){
+  MENU.list.slice().sort(function(a,b){return (a.label==='Arquivo'?0:1)-(b.label==='Arquivo'?0:1);}).forEach(function(top){   // Arquivo sempre primeiro, à esquerda de Editar
     var m=el('div','mi'),l=el('span','ml');l.textContent=top.label;m.appendChild(l);m.appendChild(ddEl(top.node));
     l.onclick=function(e){e.stopPropagation();var was=m.classList.contains('open');closeMenus();if(!was)m.classList.add('open');};
     m.onmouseenter=function(){if(document.querySelector('.mi.open')&&!m.classList.contains('open')){closeMenus();m.classList.add('open');}};
@@ -525,7 +525,7 @@ function buildMenus(){
 /* ---- toolbar ---- */
 function buildToolbar(){
   if(!ui.ready)return;var bar=$('toolbar');bar.innerHTML='';
-  TOOLS.forEach(function(g){
+  TOOLS.slice().sort(function(a,b){return (a.name==='Arquivo'?0:1)-(b.name==='Arquivo'?0:1);}).forEach(function(g){   // grupo Arquivo primeiro
     var d=el('div','tg');
     g.items.forEach(function(it){
       var b=el('button','tb');b.type='button';b.title=it.rotulo||it.cmd;b.setAttribute('aria-label',it.rotulo||it.cmd);

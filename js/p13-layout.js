@@ -445,7 +445,12 @@ var CSS='.cad13-ov{position:absolute;left:0;right:0;top:0;bottom:26px;background
 '.cad13-wz h3{margin:0;padding:10px 14px;border-bottom:1px solid #ddd;font-size:15px}.cad13-wzc{display:flex;gap:14px;padding:12px 14px;overflow:auto;flex-wrap:wrap}'+
 '.cad13-wzl{flex:1 1 300px;display:flex;flex-direction:column;gap:8px}.cad13-wzl label{display:flex;gap:6px;align-items:center;flex-wrap:wrap}'+
 '.cad13-pv{flex:1 1 340px;background:#8a8f98;padding:10px;border-radius:4px;min-height:240px;display:flex;align-items:center;justify-content:center}.cad13-pv svg{max-width:100%;max-height:52vh;box-shadow:0 2px 8px rgba(0,0,0,.4)}'+
-'.cad13-wzf{display:flex;gap:8px;justify-content:space-between;padding:10px 14px;border-top:1px solid #ddd}.cad13-wz input[type=number]{width:64px}.cad13-note{color:#555;font-size:12px}';
+'.cad13-wzf{display:flex;gap:8px;justify-content:space-between;padding:10px 14px;border-top:1px solid #ddd}.cad13-wz input[type=number]{width:64px}.cad13-note{color:#555;font-size:12px}'+
+'.cad13-map{position:relative;background:#fff;line-height:0;overflow:hidden;touch-action:none;user-select:none;cursor:crosshair;box-shadow:0 2px 8px rgba(0,0,0,.4)}'+
+'.cad13-sel{position:absolute;border:2px solid #e5322d;box-shadow:0 0 0 9999px rgba(0,0,0,.38);cursor:move;box-sizing:border-box}'+
+'.cad13-sel i{position:absolute;width:12px;height:12px;background:#fff;border:2px solid #e5322d;box-sizing:border-box}'+
+'.cad13-sel i[data-h=nw]{left:-7px;top:-7px;cursor:nwse-resize}.cad13-sel i[data-h=ne]{right:-7px;top:-7px;cursor:nesw-resize}.cad13-sel i[data-h=sw]{left:-7px;bottom:-7px;cursor:nesw-resize}.cad13-sel i[data-h=se]{right:-7px;bottom:-7px;cursor:nwse-resize}'+
+'.cad13-lbl{position:absolute;left:4px;top:4px;background:rgba(255,255,230,.95);border:1px solid #999;padding:1px 6px;font:11px/16px system-ui;color:#111;pointer-events:none}';
 function el(tag,cls,html){var e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
 function hostEl(){
   var c=document.querySelector('canvas'),h=document.querySelector('#cad-wrap,#canvas-wrap,#viewport,#stage')||(c&&c.parentElement)||document.body;
@@ -455,7 +460,7 @@ function renderTabs(){
   if(typeof document==='undefined')return;
   var t=document.querySelector('.cad13-tabs');if(!t)return;
   t.innerHTML='<button data-n="model" class="'+(CUR==='model'?'on':'')+'">Modelo</button>'+
-    layouts().map(function(l){return '<button data-n="'+esc(l.name)+'" class="'+(CUR===l.name?'on':'')+'" title="Duplo clique: renomear">'+esc(l.name)+'</button>';}).join('')+'<button data-n="+" title="Novo layout">+</button>';
+    layouts().map(function(l){return '<button data-n="'+esc(l.name)+'" class="'+(CUR===l.name?'on':'')+'" title="Duplo clique: renomear">'+esc(l.name)+'</button>';}).join('')+'<button data-n="+" title="Novo layout">+</button><button data-n="-" title="Excluir o layout atual">\u2212</button>';
 }
 function ovOpen(){
   if(OV||typeof document==='undefined')return;
@@ -578,8 +583,52 @@ function openWizard(opt){
   function fin(){var j=clone(job);j.area=job.area;if(job.scale==='custom')j.scale=parseScale(job.customScale)||100;return j;}
   function sel(id,opts,val){return '<select data-k="'+id+'">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(String(o[0])===String(val)?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select>';}
   function num(id,val,st){return '<input type="number" data-k="'+id+'" value="'+val+'" step="'+(st||1)+'">';}
+  function areaPreview(pv){   // mostra o desenho do modelo e a área que será impressa (arraste para escolher)
+    var ex=extents(),cur=areaWin(job),sel={x1:cur.x1,y1:cur.y1,x2:cur.x2,y2:cur.y2};
+    var b={x1:Math.min(ex.x1,sel.x1),y1:Math.min(ex.y1,sel.y1),x2:Math.max(ex.x2,sel.x2),y2:Math.max(ex.y2,sel.y2)};
+    var pad=Math.max(b.x2-b.x1,b.y2-b.y1,1)*.06;b.x1-=pad;b.y1-=pad;b.x2+=pad;b.y2+=pad;
+    var W0=200,H0=Math.max(40,Math.min(400,W0*(b.y2-b.y1)/(b.x2-b.x1))),dm=dimsOf('custom',W0>=H0?'landscape':'portrait',W0,H0);
+    var asp=dm.w/dm.h,bw=b.x2-b.x1,bh=b.y2-b.y1,cxm=(b.x1+b.x2)/2,cym=(b.y1+b.y2)/2;
+    if(bw/bh<asp){bw=bh*asp;}else{bh=bw/asp;}
+    b={x1:cxm-bw/2,x2:cxm+bw/2,y1:cym-bh/2,y2:cym+bh/2};
+    var sh=buildSheet({source:'model',paper:'custom',customW:dm.w,customH:dm.h,orient:dm.w>=dm.h?'landscape':'portrait',area:{mode:'window',win:b},scale:'fitx',
+      margins:{l:0,t:0,r:0,b:0},frame:false,color:'color',lwMode:'layer',lwValue:.25,lwScale:1,layout:null});
+    pv.innerHTML='<div class="cad13-map" style="aspect-ratio:'+pn(dm.w)+'/'+pn(dm.h)+';width:min(100%,calc(52vh*'+pn(asp)+'))">'+toSVG(sh,{bg:true,fluid:true})+
+      '<div class="cad13-sel"><i data-h="nw"></i><i data-h="ne"></i><i data-h="sw"></i><i data-h="se"></i></div><div class="cad13-lbl"></div></div>';
+    var map=pv.querySelector('.cad13-map'),se=map.querySelector('.cad13-sel'),lb=map.querySelector('.cad13-lbl'),un=(CAD.doc&&CAD.doc.units)||'';
+    function show(){
+      se.style.left=((sel.x1-b.x1)/bw*100)+'%';se.style.width=((sel.x2-sel.x1)/bw*100)+'%';
+      se.style.top=((b.y2-sel.y2)/bh*100)+'%';se.style.height=((sel.y2-sel.y1)/bh*100)+'%';
+      lb.textContent='Área de impressão: '+(sel.x2-sel.x1).toFixed(2)+' × '+(sel.y2-sel.y1).toFixed(2)+(un?' '+un:'');
+    }
+    function wpt(ev){var r=map.getBoundingClientRect();return {x:b.x1+(ev.clientX-r.left)/r.width*bw,y:b.y2-(ev.clientY-r.top)/r.height*bh};}
+    var dr=null;
+    map.addEventListener('pointerdown',function(ev){
+      if(ev.button!==0)return;ev.preventDefault();var p=wpt(ev),h=ev.target.getAttribute&&ev.target.getAttribute('data-h');
+      dr={t:h?'size':(ev.target===se?'move':'new'),h:h,p0:p,o:{x1:sel.x1,y1:sel.y1,x2:sel.x2,y2:sel.y2},px:ev.clientX,py:ev.clientY,moved:false};
+      try{map.setPointerCapture(ev.pointerId);}catch(x){}
+    });
+    map.addEventListener('pointermove',function(ev){
+      if(!dr)return;var p=wpt(ev),dx=p.x-dr.p0.x,dy=p.y-dr.p0.y,o=dr.o;
+      if(Math.hypot(ev.clientX-dr.px,ev.clientY-dr.py)>3)dr.moved=true;if(!dr.moved)return;
+      if(dr.t==='move'){sel.x1=o.x1+dx;sel.x2=o.x2+dx;sel.y1=o.y1+dy;sel.y2=o.y2+dy;}
+      else if(dr.t==='size'){var h=dr.h,nx1=o.x1,nx2=o.x2,ny1=o.y1,ny2=o.y2;
+        if(h.indexOf('w')>=0)nx1=p.x;else nx2=p.x;if(h.indexOf('n')>=0)ny2=p.y;else ny1=p.y;
+        sel.x1=Math.min(nx1,nx2);sel.x2=Math.max(nx1,nx2);sel.y1=Math.min(ny1,ny2);sel.y2=Math.max(ny1,ny2);}
+      else{sel.x1=Math.min(dr.p0.x,p.x);sel.x2=Math.max(dr.p0.x,p.x);sel.y1=Math.min(dr.p0.y,p.y);sel.y2=Math.max(dr.p0.y,p.y);}
+      show();
+    });
+    function up(ev){
+      if(!dr)return;var d=dr;dr=null;try{map.releasePointerCapture(ev.pointerId);}catch(x){}
+      if(!d.moved||!(sel.x2-sel.x1>0)||!(sel.y2-sel.y1>0)){show();return;}
+      job.area={mode:'window',win:{x1:sel.x1,y1:sel.y1,x2:sel.x2,y2:sel.y2}};render();
+    }
+    map.addEventListener('pointerup',up);map.addEventListener('pointercancel',function(){dr=null;show();});
+    show();
+  }
   function preview(){
     var pv=box.querySelector('.cad13-pv');if(!pv)return;
+    if(step===1&&job.source==='model'){try{areaPreview(pv);}catch(x){pv.textContent='Prévia indisponível: '+x.message;}return;}
     try{var sh=buildSheet(fin());pv.innerHTML=toSVG(sh,{bg:true});WZ._sh=sh;}catch(x){pv.textContent='Prévia indisponível: '+x.message;}
   }
   function body(){
@@ -594,6 +643,7 @@ function openWizard(opt){
       if(job.source==='layout')h+='<div>Folha inteira do layout <b>'+esc(job.layout)+'</b> (todas as janelas, anotações e carimbo).</div>';
       else{
         h+='<label>Área '+sel('area.mode',[['extents','Extensão do desenho'],['view','Vista atual'],['window','Janela']],job.area.mode)+'</label>';
+        h+='<div class="cad13-note">O retângulo vermelho na prévia é a área que será impressa. Arraste na prévia para desenhar uma nova área, arraste o retângulo para mover ou os cantos para redimensionar.</div>';
         if(job.area.mode==='window'){var w=job.area.win;h+='<button data-act="win">Escolher janela no desenho</button><div class="cad13-note">'+(w?'Janela: '+pn(w.x1)+','+pn(w.y1)+' → '+pn(w.x2)+','+pn(w.y2):'Nenhuma janela definida (usa extensão).')+'</div>';}
       }
     }else if(step===2){
@@ -730,8 +780,12 @@ function boot(){
   var st=document.createElement('style');st.textContent=CSS;document.head.appendChild(st);
   var tabs=el('div','cad13-tabs');hostEl().appendChild(tabs);
   tabs.addEventListener('click',function(ev){var n=ev.target.getAttribute&&ev.target.getAttribute('data-n');if(n==null)return;
-    if(n==='+')showLayout(addLayout('Layout'));else showLayout(n);});
-  tabs.addEventListener('dblclick',function(ev){var n=ev.target.getAttribute&&ev.target.getAttribute('data-n');if(!n||n==='+'||n==='model')return;
+    if(n==='+')showLayout(addLayout('Layout'));
+    else if(n==='-'){
+      if(CUR==='model'){say('Abra o layout que deseja excluir e clique em \u2212 (o Modelo não pode ser excluído).');return;}
+      if(window.confirm('Excluir o layout "'+CUR+'" e tudo o que há nele?'))removeLayout(CUR);
+    }else showLayout(n);});
+  tabs.addEventListener('dblclick',function(ev){var n=ev.target.getAttribute&&ev.target.getAttribute('data-n');if(!n||n==='+'||n==='-'||n==='model')return;
     var nn=window.prompt('Novo nome do layout',n);if(nn&&!renameLayout(n,nn))say('Nome inválido ou já existente.');renderTabs();});
   renderTabs();
   try{CAD.ui.menu.add('Arquivo/Imprimir…','Imprimir…','PLOT');CAD.ui.menu.add('Layout/Novo layout','Novo layout','LAYOUT');CAD.ui.menu.add('Layout/Nova janela','Nova janela','MVIEW');CAD.ui.menu.add('Layout/Modelo','Modelo','MODEL');}catch(x){}
