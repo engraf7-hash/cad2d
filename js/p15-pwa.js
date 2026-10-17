@@ -1,7 +1,7 @@
 /* ==== PART:15 ==== */
 (function(CAD){
 'use strict';
-const VERSION='1.0.0'; // tools/build-release.js atualiza esta linha
+const VERSION='1.1.0'; // tools/build-release.js atualiza esta linha
 const R=CAD.release=CAD.release||{};
 R.version=VERSION;R.cache='cad2d-v'+VERSION;R.updateReady=false;R.sw='não iniciado';
 const say=m=>{try{CAD.cmd&&CAD.cmd.print&&CAD.cmd.print(m);}catch(_){}};

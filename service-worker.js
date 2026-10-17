@@ -1,6 +1,6 @@
 /* ==== PART:15 (service-worker) ==== */
 // tools/build-release.js atualiza VERSION e FILES. Para publicar nova versão: rode o build e publique a pasta.
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const CACHE = 'cad2d-v' + VERSION;
 const FILES = [/*FILES:BEGIN*/'./','index.html','styles.css','manifest.json','icons/192.png','icons/512.png','js/p1-nucleo.js','js/p2-geometria.js','js/p3-precisao.js','js/p4-layers-props.js','js/p5-desenho.js','js/p6-edicao.js','js/p7-hatch.js','js/p8-texto.js','js/p9-cotas.js','js/p10-blocos.js','js/p11-arquivos.js','js/p12-dxf.js','js/p13-layout.js','js/p14-extras.js','js/p15-pwa.js'/*FILES:END*/];
 
