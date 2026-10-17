@@ -216,7 +216,7 @@ async function doOpen(){
   await confirmDiscard();
   var all=fmts(false);
   var r=await pickOpen(all.map(function(x){return accept(x.ext,x.label);}),all.map(function(x){return '.'+x.ext;}).join(',')+',.json');
-  var fl=r.file,ext=((fl.name.match(/\.([^.]+)$/)||[])[1]||'cad').toLowerCase(),text=await fl.text(),d,isCad=(ext==='cad'||ext==='json');
+  var fl=r.file,ext=((fl.name.match(/\.([^.]+)$/)||[])[1]||'cad').toLowerCase(),text=await ((CAD.fileio.get(ext)||{}).binary?fl.arrayBuffer():fl.text()),d,isCad=(ext==='cad'||ext==='json');
   if(isCad)d=parseCad(text);
   else{
     var fio=CAD.fileio.get(ext);

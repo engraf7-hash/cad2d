@@ -609,7 +609,182 @@ try{
   CAD.ui.menu.add('Arquivo','Importar DXF (mesclar)','DXFIMPORT');
 }catch(_){}
 
+/* =====================  DWG (via LibreDWG/WebAssembly, carregado só quando um .dwg é aberto)  =====================
+   O conversor fica em js/dwg/ (loader.js, dist/, wasm/) — LibreDWG é GPL-3.0; este bloco só o carrega sob demanda.
+   Fluxo: arquivo .dwg -> LibreDWG (WASM) -> banco de dados -> texto DXF -> importDXF (mesmo caminho do .dxf). */
+var DWG_BASE=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/[^\/]*$/,'')+'dwg/':'js/dwg/';
+var DWG={lib:null,T:null,loading:null};
+var DWGLW=[0,5,9,13,15,18,20,25,30,35,40,50,53,60,70,80,90,100,106,120,140,158,200,211];
+var R2D=180/Math.PI;
+function dn(v,d){return (typeof v==='number'&&isFinite(v))?v:(d||0);}
+function dwgVer(buf){var s='';try{var u=new Uint8Array(buf,0,6);for(var i=0;i<6;i++)s+=String.fromCharCode(u[i]);}catch(_){}return s;}
+var DWGVER={AC1012:'R13',AC1014:'R14',AC1015:'2000',AC1018:'2004',AC1021:'2007',AC1024:'2010',AC1027:'2013',AC1032:'2018'};
+function loadDwgLib(){
+  if(DWG.lib)return Promise.resolve(DWG);
+  if(DWG.loading)return DWG.loading;
+  DWG.loading=new Promise(function(res,rej){
+    function fail(m){DWG.loading=null;rej(new Error(m));}
+    if(!window.WebAssembly)return fail('Este navegador não suporta WebAssembly.');
+    if(location.protocol==='file:')return fail('Abrir DWG exige o app em http(s) (GitHub Pages ou localhost); em file:// o WebAssembly não carrega.');
+    function go(){
+      var M=window.CAD_DWG;if(!M||!M.LibreDwg)return fail('Conversor DWG não carregou (js/dwg/loader.js).');
+      M.LibreDwg.create(DWG_BASE+'wasm').then(function(lib){DWG.lib=lib;DWG.T=M.Dwg_File_Type;res(DWG);},
+        function(e){fail('Falha ao iniciar o conversor DWG: '+(e&&e.message||e));});
+    }
+    if(window.CAD_DWG)return go();
+    var s=document.createElement('script');s.type='module';s.src=DWG_BASE+'loader.js';
+    s.onload=go;s.onerror=function(){fail('Conversor DWG não encontrado. Copie a pasta js/dwg/ (loader.js, dist/, wasm/) para o site.');};
+    document.head.appendChild(s);
+  });
+  return DWG.loading;
+}
+/* ---- banco de dados LibreDWG -> texto DXF ---- */
+function dbToDxf(db){
+  var W=[],skip={},ents=0;
+  function g(c,v){W.push(String(c),String(v==null?'':v));}
+  function pt(c,p,z){p=p||{};g(c,dn(p.x));g(c+10,dn(p.y));if(z!==false)g(c+20,dn(p.z));}
+  function lwv(i){return (typeof i==='number'&&i>=0&&i<DWGLW.length)?DWGLW[i]:-1;}
+  function common(e){
+    g(8,e.layer||'0');
+    var lt=String(e.lineType||'').trim();if(lt&&!/^by(layer|block)$/i.test(lt))g(6,lt);
+    var ci=e.colorIndex;if(typeof ci==='number'&&ci>=0&&ci<256)g(62,ci);
+    if(typeof e.color==='number'&&e.color>=0&&(ci===undefined||ci===256||ci===0))g(420,e.color);
+    var lw=lwv(e.lineweight);if(lw>=0)g(370,lw);
+  }
+  function nrm(e){var z=e.extrusionDirection&&e.extrusionDirection.z;if(typeof z==='number'&&z<0){g(210,0);g(220,0);g(230,-1);}}
+  function textCore(t,e){   // TEXT/ATTRIB: dados em t
+    g(10,dn(t.startPoint&&t.startPoint.x));g(20,dn(t.startPoint&&t.startPoint.y));g(30,0);
+    g(40,dn(t.textHeight,1));g(1,t.text);g(50,dn(t.rotation)*R2D);g(7,t.styleName||'Standard');
+    var h=dn(t.halign),v=dn(t.valign);if(h)g(72,h);if(v)g(73,v);
+    if((h||v)&&t.endPoint){g(11,dn(t.endPoint.x));g(21,dn(t.endPoint.y));g(31,0);}
+  }
+  var WR={
+    LINE:function(e){g(0,'LINE');common(e);pt(10,e.startPoint);pt(11,e.endPoint);},
+    XLINE:function(e){g(0,'XLINE');common(e);pt(10,e.firstPoint);pt(11,e.unitDirection);},
+    RAY:function(e){g(0,'RAY');common(e);pt(10,e.firstPoint);pt(11,e.unitDirection);},
+    CIRCLE:function(e){g(0,'CIRCLE');common(e);pt(10,e.center);g(40,dn(e.radius));nrm(e);},
+    ARC:function(e){g(0,'ARC');common(e);pt(10,e.center);g(40,dn(e.radius));g(50,dn(e.startAngle)*R2D);g(51,dn(e.endAngle)*R2D);nrm(e);},
+    ELLIPSE:function(e){g(0,'ELLIPSE');common(e);pt(10,e.center);pt(11,e.majorAxisEndPoint);g(40,dn(e.axisRatio,1));g(41,dn(e.startAngle));g(42,dn(e.endAngle,Math.PI*2));},
+    POINT:function(e){g(0,'POINT');common(e);pt(10,e.position);},
+    LWPOLYLINE:function(e){
+      var v=e.vertices||[];if(v.length<2)return false;
+      g(0,'LWPOLYLINE');common(e);g(90,v.length);g(70,(dn(e.flag)&512)?1:0);
+      v.forEach(function(p){g(10,dn(p.x));g(20,dn(p.y));if(p.bulge)g(42,p.bulge);});nrm(e);
+    },
+    POLYLINE3D:function(e){
+      var v=e.vertices||[];if(v.length<2)return false;
+      g(0,'LWPOLYLINE');common(e);g(90,v.length);g(70,dn(e.flag)&1?1:0);
+      v.forEach(function(p){g(10,dn(p.x));g(20,dn(p.y));});
+    },
+    SPLINE:function(e){
+      var fp=e.fitPoints||[],cp=e.controlPoints||[],kn=e.knots||[];if(fp.length<2&&cp.length<2)return false;
+      g(0,'SPLINE');common(e);g(70,dn(e.flag));g(71,dn(e.degree,3));g(72,kn.length);g(73,cp.length);g(74,fp.length);
+      kn.forEach(function(k){g(40,k);});cp.forEach(function(p){pt(10,p);});fp.forEach(function(p){pt(11,p);});
+    },
+    TEXT:function(e){g(0,'TEXT');common(e);textCore(e,e);},
+    MTEXT:function(e){
+      g(0,'MTEXT');common(e);pt(10,e.insertionPoint);g(40,dn(e.textHeight,1));g(41,dn(e.rectWidth));g(71,dn(e.attachmentPoint,1));
+      g(1,e.text);g(7,e.styleName||'Standard');
+      var d=e.direction;if(d&&(d.x||d.y))pt(11,d);else g(50,dn(e.rotation));
+    },
+    INSERT:function(e){
+      var at=(e.attribs||[]).filter(function(a){return a&&a.text;});
+      g(0,'INSERT');if(at.length)g(66,1);common(e);g(2,e.name);pt(10,e.insertionPoint);
+      g(41,dn(e.xScale,1));g(42,dn(e.yScale,1));g(43,dn(e.zScale,1));g(50,dn(e.rotation)*R2D);
+      if(at.length){at.forEach(function(a){g(0,'ATTRIB');common(a);textCore(a.text,a);g(2,a.tag);});g(0,'SEQEND');g(8,e.layer||'0');}
+    },
+    SOLID:function(e){g(0,'SOLID');common(e);pt(10,e.corner1);pt(11,e.corner2);pt(12,e.corner3);pt(13,e.corner4);},
+    DIMENSION:function(e){if(!e.name)return false;g(0,'DIMENSION');common(e);g(2,e.name);g(70,0);},
+    HATCH:function(e){
+      var P=e.boundaryPaths||[];if(!P.length)return false;
+      g(0,'HATCH');common(e);var solid=dn(e.solidFill)===1;
+      g(2,solid?'SOLID':(e.patternName||'SOLID'));g(70,solid?1:0);g(71,0);g(91,P.length);
+      P.forEach(function(p){
+        var poly=(dn(p.boundaryPathTypeFlag)&2)&&p.vertices&&p.vertices.length;
+        if(poly){
+          g(92,dn(p.boundaryPathTypeFlag));g(72,1);g(73,p.isClosed===false?0:1);g(93,p.vertices.length);
+          p.vertices.forEach(function(v){g(10,dn(v.x));g(20,dn(v.y));if(v.bulge)g(42,v.bulge);});
+        }else{
+          var ed=p.edges||[];g(92,dn(p.boundaryPathTypeFlag)&~2);g(93,ed.length);
+          ed.forEach(function(x){
+            var ccw=[x.isCCW,x.isCounterClockwise,x.counterClockwise,x.ccw].filter(function(v){return v!==undefined;})[0];ccw=(ccw===undefined)?1:(ccw?1:0);
+            g(72,dn(x.type));
+            if(x.type===1){g(10,dn(x.start&&x.start.x));g(20,dn(x.start&&x.start.y));g(11,dn(x.end&&x.end.x));g(21,dn(x.end&&x.end.y));}
+            else if(x.type===2){g(10,dn(x.center&&x.center.x));g(20,dn(x.center&&x.center.y));g(40,dn(x.radius));g(50,dn(x.startAngle)*R2D);g(51,dn(x.endAngle)*R2D);g(73,ccw);}
+            else if(x.type===3){g(10,dn(x.center&&x.center.x));g(20,dn(x.center&&x.center.y));g(11,dn(x.majorAxisEndPoint&&x.majorAxisEndPoint.x));g(21,dn(x.majorAxisEndPoint&&x.majorAxisEndPoint.y));
+              g(40,dn(x.axisRatio,1));g(50,dn(x.startAngle)*R2D);g(51,dn(x.endAngle)*R2D);g(73,ccw);}
+          });
+        }
+        g(97,0);
+      });
+      g(75,0);g(76,1);g(52,dn(e.patternAngle)*R2D);g(41,dn(e.patternScale,1));
+    }
+  };
+  function writeEnt(e){
+    if(!e||e.isVisible===false)return;
+    var f=WR[e.type],at=W.length,ok;
+    if(!f){skip[e.type]=(skip[e.type]||0)+1;return;}
+    try{ok=f(e);}catch(err){ok=false;}
+    if(ok===false){W.length=at;skip[e.type]=(skip[e.type]||0)+1;return;}
+    ents++;
+  }
+  var H=db.header||{},ins=dn(H.INSUNITS),br=(db.tables&&db.tables.BLOCK_RECORD&&db.tables.BLOCK_RECORD.entries)||[];
+  g(0,'SECTION');g(2,'HEADER');g(9,'$INSUNITS');g(70,ins);g(0,'ENDSEC');
+  /* layers */
+  g(0,'SECTION');g(2,'TABLES');g(0,'TABLE');g(2,'LAYER');
+  ((db.tables&&db.tables.LAYER&&db.tables.LAYER.entries)||[]).forEach(function(l){
+    var fl=typeof l.standardFlag==='number'?l.standardFlag:0,ci=dn(l.colorIndex,7);
+    g(0,'LAYER');g(2,l.name);g(70,(fl&1||l.frozen?1:0)|(fl&4?4:0));g(62,l.off?-Math.abs(ci||7):(ci||7));
+    if(!(ci>=1&&ci<=255)&&typeof l.color==='number'&&l.color>0)g(420,l.color);
+    if(l.lineType)g(6,l.lineType);var lw=lwv(l.lineweight);if(lw>=0)g(370,lw);g(290,l.plotFlag===0?0:1);
+  });
+  g(0,'ENDTAB');g(0,'ENDSEC');
+  /* blocos (inclui *D = cotas) */
+  g(0,'SECTION');g(2,'BLOCKS');
+  br.forEach(function(b){
+    if(/^\*(model_space|paper_space)/i.test(b.name))return;
+    g(0,'BLOCK');g(8,'0');g(2,b.name);g(70,0);pt(10,b.basePoint);
+    (b.entities||[]).forEach(writeEnt);
+    g(0,'ENDBLK');g(8,'0');
+  });
+  g(0,'ENDSEC');
+  /* espaço modelo */
+  g(0,'SECTION');g(2,'ENTITIES');
+  br.forEach(function(b){if(/^\*model_space$/i.test(b.name))(b.entities||[]).forEach(writeEnt);});
+  g(0,'ENDSEC');g(0,'EOF');
+  return {text:W.join('\n')+'\n',skipped:skip,entities:ents};
+}
+async function importDWG(buf){
+  var ver=dwgVer(buf);
+  if(!/^AC10\d\d$/.test(ver))throw new Error('Arquivo não parece um DWG válido.');
+  var L=await loadDwgLib(),dwg,db;
+  say('Convertendo DWG'+(DWGVER[ver]?' ('+DWGVER[ver]+')':'')+'… arquivos grandes podem demorar.');
+  await new Promise(function(r){setTimeout(r,30);});
+  try{
+    dwg=L.lib.dwg_read_data(buf,L.T.DWG);
+    db=L.lib.convert(dwg);
+  }catch(e){
+    throw new Error('O conversor não conseguiu ler este DWG (versão '+(DWGVER[ver]||ver)+'): '+(e&&e.message||e)+
+      '. Salve o desenho como AutoCAD 2004 ou mais novo, ou converta para DXF R2000 (ODA File Converter).');
+  }finally{try{if(dwg)L.lib.dwg_free(dwg);}catch(_){}}
+  var c=dbToDxf(db);
+  if(!c.entities)throw new Error('Nenhuma entidade do espaço modelo pôde ser convertida.');
+  var r=importDXF(c.text);
+  Object.keys(c.skipped).forEach(function(k){r.report.skipped[k]=(r.report.skipped[k]||0)+c.skipped[k];});
+  r.report.dwgVersion=DWGVER[ver]||ver;
+  return r;
+}
+CAD.fileio.register({ext:'dwg',label:'AutoCAD DWG (.dwg) — conversor LibreDWG',binary:true,
+  import:function(buf){return importDWG(buf).then(function(r){reportIn(r.report);return r.doc;});}});
+reg('DWGIMPORT',['DWGIN'],async function(){
+  var f=await pickFile('.dwg'),r=await importDWG(await f.arrayBuffer()),n=applyDXF(r.doc);
+  try{var b=CAD.view.extents();if(b&&isFinite(b.x1+b.y1+b.x2+b.y2))CAD.view.fit(b.x1,b.y1,b.x2,b.y2,0.05);}catch(_){}
+  reportIn(r.report);say('DWG mesclado ao desenho atual ('+n+' entidade(s)).');
+});
+try{CAD.ui.menu.add('Arquivo','Importar DWG (mesclar)','DWGIMPORT');}catch(_){}
+
 CAD.dxf={export:exportDXF,import:importDXF,parse:parseDXF,gv:gv,gn:gn,gp:gp,gall:gall,enc:enc,dec:dec,
+  dwg:{import:importDWG,toDxf:dbToDxf,load:loadDwgLib},
   register:function(dxfName,fn){FROM[String(dxfName).toUpperCase()]=fn;},
   registerOut:function(type,toDXF){D[type]={toDXF:toDXF};},
   color:{pair:colorPair,hex:toHex,aci:function(i){return toHex(pal()[i]||pal()[7]);}},apply:applyDXF};

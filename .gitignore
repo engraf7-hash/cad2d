@@ -3,3 +3,5 @@ _site/
 *.log
 .DS_Store
 _trashed-*
+js/dwg/
+dwg-conversor/
